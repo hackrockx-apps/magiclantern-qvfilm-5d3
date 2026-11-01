@@ -56,7 +56,15 @@ class BaselineStageTests(unittest.TestCase):
             "autoexec.bin": b"x", "ML/x": b"x"
         }))
         self.assertEqual(result["decision"], "BLOCK")
-        self.assertIn("ML-SETUP.FIR", result["structure"]["missing_required"])
+        self.assertIn("5D3.123 matching installer .FIR", result["structure"]["missing_required"])
+
+    def test_legacy_setup_fir_accepted_for_review(self):
+        archive = self.make_zip(contents={
+            "autoexec.bin": b"x", "ML5D3123.FIR": b"x", "ML/FONTS/test.fnt": b"x"
+        })
+        result = st.analyze_archive(archive)
+        self.assertEqual(result["decision"], "STRUCTURE_PASS_INSTALL_HOLD")
+        self.assertEqual(result["structure"]["setup_fir_names"], ["ML5D3123.FIR"])
 
     def test_path_traversal_rejected(self):
         result = st.analyze_archive(self.make_zip(contents={
