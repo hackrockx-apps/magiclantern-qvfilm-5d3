@@ -1,4 +1,4 @@
-# QVFilm 5D3.123 — Gói kiểm tra tương thích & dự phòng an toàn v0.2.1
+# QVFilm 5D3.123 — Gói kiểm tra tương thích & dự phòng an toàn v0.2.2
 
 **Dành cho Windows 10. Chỉ kiểm tra và sao lưu. KHÔNG chứa firmware để cài vào máy.**
 
