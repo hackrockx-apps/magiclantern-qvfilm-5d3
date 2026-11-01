@@ -1,0 +1,75 @@
+name: QVFIL v0.5.0 — exact 2025 source compile (NOT INSTALLABLE)
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.5.0-2025-hud-lossless-guard
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qvfil-2025-source-patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout QVFilm fork (patches only)
+        uses: actions/checkout@v4
+      - name: Install ARM build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            make gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-dev libnewlib-arm-none-eabi \
+            gcc g++ libc6-dev mercurial python3 perl
+      - name: Fetch exact installed Magic Lantern 2025 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/reticulatedpines/magiclantern_simplified.git upstream-2025
+          git -C upstream-2025 checkout --detach ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          test "$(git -C upstream-2025 rev-parse HEAD)" = "ed3e7c0dfacfdeaf3349dee73edf9e3621217462"
+      - name: Verify patch behavior on exact original
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+             qvfilm/2025/fixture-2025-mlv_lite.c
+          python3 -m unittest discover -s qvfilm/2025 -p 'test_patch_2025.py' -v
+          rm qvfilm/2025/fixture-2025-mlv_lite.c
+      - name: Apply strictly-anchored QVFilm patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/2025/apply_qvfilm_patch.py --checkout upstream-2025
+          git -C upstream-2025 diff --check
+          test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
+          git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
+            > qvfilm-2025.diff
+          echo "Expected source diff:"
+          git -C upstream-2025 diff --stat
+      - name: Build 5D3.123 core of EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/platform/5D3.123 all PYTHON=python3 \
+            2>&1 | tee qvfilm-core-build.log
+      - name: Build QVFil patched MLV Lite from EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/modules/raw_video/mlv_lite all PYTHON=python3 \
+            2>&1 | tee qvfilm-module-build.log
+      - name: Archive source review diff and logs ONLY
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.5.0_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
+          path: |
+            qvfilm-2025.diff
+            qvfilm-core-build.log
+            qvfilm-module-build.log
+          if-no-files-found: ignore
+          retention-days: 30
