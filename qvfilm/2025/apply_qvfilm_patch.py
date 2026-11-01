@@ -49,6 +49,16 @@ def patch(source):
         '    //~ console_show();'
     )
 
+    # Explain the guard in the Data format submenu before REC is pressed.
+    source = replace_once(
+        source,
+        'static MENU_UPDATE_FUNC(output_format_update)\\n{\\n    refresh_raw_settings(0);',
+        'static MENU_UPDATE_FUNC(output_format_update)\\n{\\n    refresh_raw_settings(0);\\n'
+        '    if (cam_5d3_123 && OUTPUT_COMPRESSION)\\n'
+        '        MENU_SET_WARNING(MENU_WARN_NOT_WORKING,\\n'
+        '            "QVFIL: Lossless disabled on 5D3.123; choose RAW uncompressed.");'
+    )
+
     # Blackmagic-inspired status info uses the existing LiveView bars, so
     # Canon Movie menu, exposure controls and record button remain untouched.
     # Disabled by default; no per-frame rendering, polling, or hot path writes.
