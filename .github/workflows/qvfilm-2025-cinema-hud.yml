@@ -54,13 +54,13 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          make -C upstream-2025/platform/5D3.123 all PYTHON=python3 \
+          make -C upstream-2025/platform/5D3.123 PYTHON=python3 \
             2>&1 | tee qvfilm-core-build.log
       - name: Build QVFil patched MLV Lite from EXACT 2025 tree
         shell: bash
         run: |
           set -o pipefail
-          make -C upstream-2025/modules/raw_video/mlv_lite all PYTHON=python3 \
+          make -C upstream-2025/modules/raw_video/mlv_lite PYTHON=python3 \
             2>&1 | tee qvfilm-module-build.log
       - name: Archive source review diff and logs ONLY
         if: always()
