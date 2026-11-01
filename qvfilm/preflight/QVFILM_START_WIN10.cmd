@@ -42,7 +42,7 @@ set "CARD="
 set /p "CARD=Optional camera card drive/folder (e.g. E:\), ENTER to skip: "
 set "CARD=%CARD:"=%"
 if defined CARD (
-  %PYTHON% "%~dp0preflight.py" scan --photo "%PHOTO%" --card "%CARD%" --out "%~dp0reports"
+  %PYTHON% "%~dp0preflight.py" scan --photo "%PHOTO%" --card "%CARD%\." --out "%~dp0reports"
 ) else (
   %PYTHON% "%~dp0preflight.py" scan --photo "%PHOTO%" --out "%~dp0reports"
 )
@@ -61,7 +61,7 @@ set "DEST="
 set /p "DEST=NEW empty destination folder on PC (e.g. C:\QVFilm\backup_5D3): "
 set "DEST=%DEST:"=%"
 if not defined DEST goto MAIN
-%PYTHON% "%~dp0preflight.py" backup --card "%CARD%" --dest "%DEST%"
+%PYTHON% "%~dp0preflight.py" backup --card "%CARD%\." --dest "%DEST%\."
 echo.
 pause
 goto MAIN
@@ -71,7 +71,7 @@ set "DEST="
 set /p "DEST=Backup folder to verify: "
 set "DEST=%DEST:"=%"
 if not defined DEST goto MAIN
-%PYTHON% "%~dp0preflight.py" verify-backup --dir "%DEST%"
+%PYTHON% "%~dp0preflight.py" verify-backup --dir "%DEST%\."
 echo.
 pause
 goto MAIN
