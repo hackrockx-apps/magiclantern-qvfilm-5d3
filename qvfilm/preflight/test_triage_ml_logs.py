@@ -47,6 +47,21 @@ class TriageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             t.triage_file(p)
 
+    def test_seven_logs_two_unique_and_no_code(self):
+        same = b"ML ASSERT:\n0\nat mlv_lite.c:2742 (compress_task), task compress_task\nFree Memory : 234K + 3897K"
+        other = same.replace(b"3897K", b"3900K")
+        entries = []
+        for i in range(7):
+            p = self.p / f"ASSERT{i:02d}.LOG"
+            p.write_bytes(other if i == 2 else same)
+            entries.append(t.triage_file(p))
+        report = t.summarize_logs(entries)
+        self.assertEqual(report["log_files"], 7)
+        self.assertEqual(report["unique_file_contents"], 2)
+        self.assertEqual(report["files_with_mlv_lite_2742_assert"], 7)
+        self.assertEqual(report["root_cause_decision"], "ERROR_CODE_NOT_CAPTURED")
+        self.assertEqual(sorted(group["file_count"] for group in report["duplicate_groups"]), [1, 6])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
