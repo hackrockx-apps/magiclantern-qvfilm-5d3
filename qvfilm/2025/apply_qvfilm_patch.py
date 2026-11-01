@@ -149,18 +149,25 @@ static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
 
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.2");
+    MENU_SET_RINFO("QVFIL v0.5.3");
+    if (qvfilm_hud_enabled == 2)
+    {
+        /* LiveView from inside the ML menu is NOT the recording screen:
+         * the LV key toggles Transparent Menu; close the menu first. */
+        MENU_SET_WARNING(MENU_WARN_INFO,
+            "Exit ML menu with DELETE/MENU before using START/STOP.");
+    }
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
     {
-        .name = "QVFIL Cinema HUD",
+        .name = "QVFIL HUD",
         .priv = &qvfilm_hud_enabled,
         .update = qvfilm_hud_menu_update,
         .max = 2,
-        .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
-        .help = "Cinema LiveView info. START/STOP records RAW in movie mode.",
-        .help2 = "v0.5.2: Overlay needs Global Draw and idle LiveView; Shutter may switch preview.",
+        .choices = CHOICES("OFF", "Bars", "Cinema"),
+        .help = "Close ML menu, then START/STOP to record in Movie LiveView.",
+        .help2 = "LV in menu = transparent menu, NOT REC. Requires Global Draw ON.",
     },
 };
 """
@@ -227,7 +234,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.2 patch: lossless guard + accurate RAW bit depth + optional Cinema Overlay")
+    print("QVFIL v0.5.3 patch: clarified menu exit, preserved RAW key handler and cinema overlay")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
