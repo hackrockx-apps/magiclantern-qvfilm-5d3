@@ -4649,6 +4649,9 @@ static struct lvinfo_item info_items[] = {
     }
 };
 
+/* QVFilm user interface, isolated from the RAW recording engine. */
+#include "qvfilm_ui.inc"
+
 static unsigned int raw_rec_init()
 {
     cam_eos_m = is_camera("EOSM", "2.0.2");
@@ -4701,6 +4704,9 @@ static unsigned int raw_rec_init()
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
+
+    /* Original Movie menu remains fully intact. */
+    qvfilm_register_menu();
 
     /* hack: force proper alignment in menu */
     raw_video_menu->children->parent_menu->split_pos = 15;
