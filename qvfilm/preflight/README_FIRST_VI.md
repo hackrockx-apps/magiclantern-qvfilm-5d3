@@ -1,85 +1,72 @@
-# QVFilm 5D3.123 — SAFE PREFLIGHT / RECOVERY v0.2.0
+# QVFilm 5D3.123 — Gói kiểm tra tương thích & dự phòng an toàn v0.2.0
 
-**Windows 10, read-only camera-card workflow. NO camera-installation files are included.**
+**Dành cho Windows 10. Chỉ kiểm tra và sao lưu. KHÔNG chứa firmware để cài vào máy.**
 
-Target: **Canon EOS 5D Mark III**; expected Canon firmware **1.2.3**; Magic Lantern build target \`5D3.123\`.
+Máy mục tiêu: **Canon EOS 5D Mark III**, firmware công khai **1.2.3**, nền Magic Lantern `5D3.123`.
 
-## DO NOT INSTALL YET
+## 1. Những điều cần biết
 
-This package is **NOT** an installation or a downgrade utility. It contains no \`.FIR\`, \`autoexec.bin\` or customized \`.mo\`. It does not unlock 3K modes and does not write to the camera or a CF/SD card. An offline metadata pass cannot guarantee that a firmware patch or boot card is safe.
+Dòng `9.0.1 A6(34)` trong ảnh màn hình máy của anh nhiều khả năng là phiên bản **MPU nội bộ**, **không phải** tên phiên bản Canon firmware công khai. Bảng đối chiếu cộng đồng tại https://github.com/exiftool/exiftool/issues/399 ghi nhận Canon **1.2.3 ↔ MPU 9.0.1/A6**. Đây là bằng chứng hỗ trợ, **chưa được xem là xác minh độc lập để cài firmware**.
 
-The current photographed Canon Setup menu says \`9.0.1 A6(34)\`. That is believed to describe the internal MPU firmware, **not** Canon's public firmware version number. ExifTool issue #399 records the pair Canon **1.2.3 ↔ MPU 9.0.1 / A6** for 5D Mark III, but internal MPU matching **alone** is NOT an installation approval.
+**Không cài, không hạ firmware, không chép module thử nghiệm QVFIL lên thẻ đang hoạt động.** Gói này không chứa `.FIR`, `autoexec.bin` hoặc `.mo`.
 
-References:
-- https://github.com/exiftool/exiftool/issues/399
-- https://exiftool.org/TagNames/Canon.html
-- https://github.com/hackrockx-apps/magiclantern-qvfilm-5d3
+## 2. Chuẩn bị một ảnh gốc chụp bằng 5D Mark III
 
-## 1. Required preparation
+1. Lắp thẻ nhớ, dùng chính Canon 5D Mark III chụp **một ảnh JPG hoặc CR2 mới**.
+2. Chép **file gốc nguyên vẹn** từ thẻ sang Windows 10. Không dùng ảnh chụp màn hình, ảnh qua Messenger, ảnh đã xuất lại hoặc xóa metadata.
+3. Tải **ExifTool cho Windows** từ https://exiftool.org/ . Đổi tên file thực thi thành `exiftool.exe` và đặt trong thư mục `tools` của gói (hoặc thêm vào PATH). ExifTool không đi kèm gói QVFilm.
+4. Cần có Python 3 trên Windows 10.
 
-1. Use Windows 10 with Python 3 installed.
-2. Download **ExifTool for Windows from the official source**: https://exiftool.org/ . Rename the downloaded executable to \`exiftool.exe\` if necessary and place it in the package's \`tools\` folder. Alternatively, add it to your Windows PATH. **We do not distribute ExifTool binaries.**
-3. On the 5D Mark III, **shoot a NEW original JPEG or CR2** and copy it to the PC without resizing, editing, stripping metadata or taking a screenshot. The previous photo showing the Canon screen is useful context, but cannot substitute for an original in-camera photo.
-4. If Magic Lantern currently boots from a known-good card, **keep that card untouched**. A second card is only used later, after a separate installation plan has passed review.
-5. Create a backup destination on the computer, **not on the card** (e.g. \`C:\QVFilm\5D3\ML_backup_20261101\`). Its final folder **must not already exist**.
+## 3. Chạy chương trình trên Windows 10
 
-## 2. Run on Windows
+Giải nén gói vào thư mục trên máy tính, rồi nhấp đúp `QVFILM_START_WIN10.cmd`. Chọn chức năng:
 
-Double-click \`QVFILM_START_WIN10.cmd\` inside this folder.
+- **1 — Kiểm tra firmware:** nhập đường dẫn đầy đủ đến ảnh JPG/CR2 gốc; có thể nhập đường dẫn ổ thẻ như `E:` để kiểm tra sự hiện diện của file Magic Lantern. Chương trình tạo `reports/qvfilm_preflight_report.json` trên **máy tính**, không ghi lên thẻ.
+- **2 — Sao lưu thẻ đang hoạt động tốt:** nhập đường dẫn ổ CF/SD và đường dẫn một **thư mục đích chưa tồn tại** trên PC (ví dụ `C:\QVFilm\5D3\known_good_20261101`). Chương trình chỉ chép `autoexec.bin`, `ML/` và `ML-SETUP.FIR` nếu có. Nó không chép `DCIM/` — cần sao lưu ảnh và video riêng.
+- **3 — Kiểm tra bản sao lưu:** đối chiếu SHA-256 mọi file với `BACKUP_MANIFEST.json`. Chỉ chấp nhận bản backup có `BACKUP_COMPLETE.txt`.
 
-- **1 — Scan original photo**: Enter full path to original JPG/CR2, optionally the CF/SD card drive. Writes only \`reports/qvfilm_preflight_report.json\` beside the Windows launcher. It does NOT write to the card.
-- **2 — Backup a known-good ML card**: Copy only \`autoexec.bin\`, \`ML/\` and \`ML-SETUP.FIR\` if present, to a **new** PC folder. File-by-file SHA-256 is compared against the source. DCIM/photographs/footage are deliberately excluded: back up valuable footage separately.
-- **3 — Verify copied backup**: Compare all files against \`BACKUP_MANIFEST.json\`. A \`BACKUP_COMPLETE.txt\` marker is written ONLY after all original/copy SHA-256 checks pass.
+Những tác vụ này chỉ đọc thẻ rồi ghi file trên PC. Không tạo thẻ boot, không thay đổi cờ boot (bootflag), không format hoặc cài firmware.
 
-All operations are designed to be one-way: **camera card → computer**. No formatting, bootflag changes, firmware writes, card restore writes or Canon firmware updates are performed. A verified directory backup is NOT automatically a bootable recovery card.
+Lệnh nâng cao (không bắt buộc):
 
-Advanced command line:
-
-\`\`\`powershell
+```powershell
 py -3 preflight.py scan --photo "C:\Photos\IMG_0001.CR2" --card "E:\" --out "reports"
-py -3 preflight.py backup --card "E:\" --dest "C:\QVFilm\5D3\ml_known_good_20261101"
-py -3 preflight.py verify-backup --dir "C:\QVFilm\5D3\ml_known_good_20261101"
-\`\`\`
+py -3 preflight.py backup --card "E:\" --dest "C:\QVFilm\5D3\known_good_20261101"
+py -3 preflight.py verify-backup --dir "C:\QVFilm\5D3\known_good_20261101"
+```
 
-## 3. Interpret compatibility result
+## 4. Hiểu kết quả
 
-| Status | Meaning | May install QVFIL firmware? |
+| Kết quả | Ý nghĩa | Cho phép cài QVFIL? |
 |---|---|---|
-| \`PASS_METADATA\` | Original image metadata identifies **5D Mark III** and explicit public firmware **1.2.3**. | **NO**. Continue safety and bootability checks first. |
-| \`REVIEW_REQUIRED\` | Camera/Canon version missing, or only MPU \`9.0.1 A6(34)\` identified; ExifTool missing also gives review. | **NO** |
-| \`BLOCK_MISMATCH\` | Wrong body, public version other than 1.2.3, or conflicting tags. | **NO** |
+| `PASS_METADATA` | Ảnh gốc có metadata ghi rõ 5D Mark III và firmware Canon 1.2.3 | **KHÔNG**, cần các vòng nghiệm thu khác |
+| `REVIEW_REQUIRED` | Thiếu thông số, thiếu ExifTool hoặc chỉ thấy MPU 9.0.1/A6 | **KHÔNG** |
+| `BLOCK_MISMATCH` | Sai thân máy, sai phiên bản 1.2.3 hoặc các trường metadata mâu thuẫn | **KHÔNG** |
 
-For a later camera installation decision (outside this package), require ALL of:
-- Source hardware and firmware independently verified as 5D3 + 1.2.3, including inspection of camera firmware/version evidence;
-- A known-good boot card preserved and checksummed (if one exists);
-- A matching baseline Magic Lantern build successfully tested independently;
-- A **complete camera-specific boot/installer package**, reviewed by a maintainer;
-- Battery/CF/SD verified; tested power-loss and uninstall procedure available for the specific build;
-- QVFIL module hardware test, LiveView/record button validation, thermal and 3K frame-drop/recording test.
-- No unexpected warnings or crashes.
+Ngay cả `PASS_METADATA` cũng **không chứng minh** gói `autoexec.bin` / module thử nghiệm đã tương thích, máy có bootflag phù hợp, hoạt động ổn định hoặc quay 3K liên tục.
 
-## 4. Recovery precautions
+## 5. Phương án dự phòng và khôi phục
 
-**Before installing anything in a future phase:** preserve a known-good original card, a PC backup and a second blank test card. Keep all sources and hashes. Do **not** overwrite the original card. Never install a QVFIL prototype \`.mo\` onto a working card just because it compiles.
+- **Trước mọi thử nghiệm sau này:** Giữ nguyên thẻ Magic Lantern **đang hoạt động tốt** (nếu đã có), sao lưu nó ra PC và kiểm tra SHA-256; sử dụng **một thẻ khác** dành riêng cho các bản thử nghiệm. Không được dùng bản thử nghiệm để thay thế thẻ tốt.
+- Nếu máy bị treo sau khi lắp thẻ thử: tắt nguồn, đợi đèn ghi thẻ ngừng sáng rồi lấy **thẻ thử** ra. Khi máy đã tắt, có thể tháo/lắp lại pin; thử bật **không có thẻ**. Chỉ trở lại thẻ tốt nếu thân máy hoạt động bình thường. Nếu máy vẫn không khởi động khi không có thẻ, dừng thử nghiệm và tìm hỗ trợ Canon/kỹ sư Magic Lantern có kinh nghiệm.
+- Nếu quay RAW bị dừng, có dropped frames, lỗi MLV, nóng bất thường: ngừng quay thử, giữ nguyên file chứng cứ, quay lại bản ổn định. Không dùng máy đã hack cho cảnh không thể quay lại.
+- **Quan trọng:** Bản backup SHA-256 chỉ chứng minh file được sao chép nguyên vẹn. Không bảo đảm đây là thẻ khôi phục boot được; bootflag hỏng có thể không sửa được bằng tháo thẻ.
 
-**If the camera appears frozen after inserting a test card:** stop, turn it OFF, wait for card LED activity to stop, and remove the test card. With camera OFF, remove/reseat the battery if necessary; try powering ON with no card, and only then try the known-good card if the body behaves normally. Do not repeatedly reboot or initiate a speculative downgrade. If the camera still fails without the test card, **stop and consult qualified Canon service / an experienced Magic Lantern developer**. Bootflag corruption cannot be guaranteed recoverable by removing the card.
+Gói **không tự động khôi phục bằng cách ghi lên thẻ**. Việc làm thẻ boot/installer phải có quy trình riêng, đã đối chiếu chính xác firmware và được nghiệm thu trước khi dùng.
 
-**If RAW capture fails / dropped frames:** stop tests, preserve the source MLV files, revert to the known-good card, and do not shoot non-repeatable work with experimental firmware.
+## 6. Những tiêu chí bắt buộc trước phiên bản cài lên máy
 
-This package intentionally cannot restore a card to bootable status by itself: automatic card writing would increase risk. After hardware verification, restoring ML boot media must use the **specific known-good procedure and boot flags for that body**, not a generic copy operation.
+1. Xác minh độc lập thân máy đúng 5D3 và firmware Canon 1.2.3.
+2. Giữ thẻ boot tốt và có backup file cùng hash.
+3. Kiểm tra đúng installer/build tương thích với thẻ và bootflag.
+4. Nghiệm thu các nút điều khiển, menu Movie + QVFIL, LiveView và thoát menu.
+5. Kiểm tra thực tế RAW 3K 24/25p: nhiệt độ, card speed, dropped frames và thời lượng ghi.
+6. Có cách trở về bản ổn định đã kiểm chứng — **không hứa có thể cứu mọi lỗi bootflag**.
 
-## 5. Privacy and integrity
+## 7. Quyền riêng tư
 
-The preflight report contains the selected picture's filename, SHA-256, camera model and public firmware tag values only. Serial numbers, owner names and GPS data are not exported. The original photo is not modified or uploaded. Only the user can choose to share the report; do not commit raw photos or private reports to a public GitHub repository.
+Báo cáo chỉ lưu tên file ảnh, SHA-256, model và những trường phiên bản firmware được đọc. Không xuất số serial, tên chủ máy hoặc GPS. Ảnh gốc không bị sửa và không tải lên Internet. **Không đăng ảnh cá nhân hoặc báo cáo riêng tư lên GitHub công khai.**
 
-Run the synthetic unit tests locally with:
+Mã nguồn và bài test có tại https://github.com/hackrockx-apps/magiclantern-qvfilm-5d3 . Chạy test với `py -3 -m unittest discover -s . -p "test_preflight.py" -v`.
 
-\`\`\`powershell
-py -3 -m unittest discover -s . -p "test_preflight.py" -v
-\`\`\`
-
-## 6. Current engineering state
-
-- Base branch \`qvfilm/v0.1.0-ui-prototype\` has successfully compiled \`platform/5D3.123\` and \`mlv_lite.mo\` in GitHub Actions, but has **not** passed testing on real hardware.
-- Branch \`qvfilm/v0.2.0-preflight-recovery\` adds this cautious offline safety gate. It intentionally does not provide a flashable or installable firmware bundle.
-- Release status: **OFFLINE QA ONLY / NOT FOR INSTALLATION**.
+**Trạng thái: OFFLINE QA ONLY — NOT FOR INSTALLATION.**
