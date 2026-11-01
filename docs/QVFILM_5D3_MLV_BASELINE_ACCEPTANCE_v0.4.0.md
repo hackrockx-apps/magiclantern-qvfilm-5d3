@@ -17,11 +17,11 @@ Status: **Stock Magic Lantern 2025 boot and basic camera checks PASS; MLV not ye
 1. Use fully charged battery, stock Magic Lantern test SD inserted; mode dial \`M\`, camera in Movie/LiveView mode.
 2. Press **ERASE** to open Magic Lantern.
 3. Navigate to the **Modules** tab (blocks/grid icon). Photograph the complete module list **before modifying anything**.
-4. Identify the stock RAW recording module actually present. Classic builds generally provide \`mlv_rec\` (sometimes also \`mlv_snd\` for MLV audio) and sometimes a differently named \`raw_rec\` or \`mlv_lite\`. **Do not assume module names or mix separate RAW recorders.**
-5. If \`mlv_rec\` is listed, toggle **only \`mlv_rec\` ON** using the contextual on-camera control. If there is an autoload option, ensure it is enabled and the module becomes enabled/green. Leave other RAW recorder modules disabled. Audio module (\`mlv_snd\`) can remain OFF for first video-only test.
-6. Exit menu, power OFF normally, pause until SD access LED stops, power ON and reopen Modules to verify \`mlv_rec\` actually loaded.
-7. Navigate to the **Movie** tab. Verify presence of **RAW video (MLV)** entry. Photograph Movie tab and the RAW video submenu before changing the capture settings. If missing, stop and report menu/module status rather than guessing.
-8. Do not invoke \`Firmware Update\`, reinstall \`ML-SETUP.FIR\`, or format the known-good SD again.
+4. Confirmed by the camera operator on the stock 2025-06-20.5D3.123 build: the Modules tab lists `mlv_lite.mo`, `mlv_play.mo`, and `mlv_snd.mo`, with **no `mlv_rec.mo`**. This is expected: `mlv_lite.mo` provides MLV RAW recording.
+5. Enable **only `mlv_lite.mo`**. Leave `mlv_play.mo` and `mlv_snd.mo` OFF for this first silent recording test. Never import an `mlv_rec.mo` or `raw_rec.mo` from another build.
+6. Exit and perform a normal power cycle; verify `mlv_lite.mo` loads without error.
+7. Open Movie tab, locate RAW video (MLV) or RAW video. Photograph both main item and its submenu before changes. If absent, stop and diagnose load status; do not copy incompatible modules.
+8. Do not invoke Firmware Update, reinstall ML-SETUP.FIR, or reformat the known-good card.
 
 ## Stage 2 — conservative short RAW recording
 
