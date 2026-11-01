@@ -39,7 +39,7 @@ def classify_metadata(metadata):
               if key.split(":")[-1] in ("Model", "CameraModelName") and value is not None]
     if not models:
         return ("REVIEW_REQUIRED", "Camera model tag missing.")
-    if any("5D Mark III" not in v or "5D Mark II" in v for v in models):
+    if any("5D Mark III" not in v for v in models):
         return ("BLOCK_MISMATCH", "Camera model does not consistently identify Canon EOS 5D Mark III.")
     candidates = []
     for key, value in metadata.items():
