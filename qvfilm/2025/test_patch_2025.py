@@ -19,13 +19,16 @@ class PatchSafetyTests(unittest.TestCase):
 
     def test_known_release_patches_exactly(self):
         result = qv.patch(self.source)
-        self.assertIn('if (cam_5d3_123 && OUTPUT_COMPRESSION)', result)
+        self.assertIn('if (is_camera("5D3", "*") && OUTPUT_COMPRESSION)', result)
         self.assertIn('NotifyBox(6000, "QVFIL: Lossless blocked.', result)
         self.assertIn('MENU_SET_WARNING(MENU_WARN_NOT_WORKING,', result)
         self.assertIn('Lossless disabled on 5D3.123', result)
-        self.assertIn('if (cam_5d3_123)', result)
+        self.assertIn('if (is_camera("5D3", "*"))', result)
         self.assertIn('menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));', result)
         self.assertIn('menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));', result)
+        self.assertLess(result.index('menu_add("Movie", qvfilm_hud_menu'),
+                        result.index('menu_add("Movie", raw_video_menu'))
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.1")', result)
         self.assertIn('qvfilm_top_info', result)
         self.assertIn('qvfilm_bottom_info', result)
         self.assertIn('MODULE_CONFIG(qvfilm_hud_enabled)', result)
