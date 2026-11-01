@@ -45,7 +45,7 @@ def main():
         # cmd.exe executes a path containing spaces; all user paths go directly
         # to Python input(), not as concatenated CMD arguments.
         cp = subprocess.run(
-            ["cmd.exe", "/d", "/c", 'call "%s"' % (prog / "QVFILM_START_WIN10.cmd")],
+            ["cmd.exe", "/d", "/c", str(prog / "QVFILM_START_WIN10.cmd")],
             cwd=str(prog),
             input=input_text,
             text=True,
