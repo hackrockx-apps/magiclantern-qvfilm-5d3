@@ -17,7 +17,7 @@ TARGET_CAMERA = "EOS 5D Mark III"
 TARGET_FIRMWARE = "1.2.3"
 TARGET_PLATFORM = "5D3.123"
 COPY_ROOTS = ("autoexec.bin", "ML", "ML-SETUP.FIR")
-REPORT_VERSION = "0.2.1"
+REPORT_VERSION = "0.2.2"
 FW_PATTERN = re.compile(r"(?<!\d)(1\.\d+\.\d+)(?!\d)")
 
 
@@ -245,14 +245,15 @@ def interactive(args):
         print("2. Back up known-good Magic Lantern card to PC")
         print("3. Verify SHA-256 backup manifest")
         print("4. Exit")
+        print("5. Compatibility audit from JSON + optional CF/SD card")
         try:
-            choice = input("Select 1-4: ").strip()
+            choice = input("Select 1-5: ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nExit. No card files modified.")
             return 0
         if choice == "4":
             return 0
-        if choice not in ("1", "2", "3"):
+        if choice not in ("1", "2", "3", "5"):
             print("Invalid choice.")
             continue
         try:
@@ -279,6 +280,36 @@ def interactive(args):
                     continue
                 code = backup(argparse.Namespace(
                     card=card, dest=dest, max_gb=4))
+            elif choice == "5":
+                from compatibility_audit import review
+                from pathlib import Path as PathCls
+                default_report = base / "reports" / "qvfilm_preflight_report.json"
+                report_path = strip_outer_quotes(input(
+                    "Preflight JSON path (ENTER for reports/qvfilm_preflight_report.json): "))
+                report_path = PathCls(report_path).expanduser().resolve() if report_path else default_report
+                if not report_path.is_file():
+                    print("BLOCKED: preflight JSON not found.")
+                    continue
+                card_input = strip_outer_quotes(input(
+                    "Optional CF/SD card drive for READ-ONLY audit (ENTER to skip): "))
+                if card_input:
+                    card_root = PathCls(card_input).expanduser().resolve()
+                    if is_inside(base, card_root):
+                        print("BLOCKED: program folder appears to be on card; extract to PC.")
+                        continue
+                data = json.loads(report_path.read_text(encoding="utf-8"))
+                result = review(data, card_input or None)
+                output_dir = base / "reports"
+                output_dir.mkdir(parents=True, exist_ok=True)
+                outfile = output_dir / "qvfilm_compatibility_audit.json"
+                outfile.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+                                   encoding="utf-8")
+                print("DECISION: ", result["installation_decision"])
+                print("MPU candidate only (unverified): ",
+                      result["public_firmware_candidate_from_community_mapping"])
+                print("CARD: ", result["card_status"]["status"])
+                print("Audit file: ", str(outfile))
+                code = 0
             else:
                 dest = strip_outer_quotes(input("PC backup folder to verify: "))
                 if not dest:

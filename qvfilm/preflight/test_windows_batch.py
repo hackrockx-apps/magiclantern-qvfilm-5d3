@@ -17,9 +17,9 @@ def main():
     src = Path(__file__).resolve().parent
     with tempfile.TemporaryDirectory(prefix="QVFILM_") as scratch:
         root = Path(scratch) / "5D Mark III Upgrade"
-        prog = root / "QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.2.1_NOT_INSTALLABLE"
+        prog = root / "QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.2.2_NOT_INSTALLABLE"
         prog.mkdir(parents=True)
-        for name in ("preflight.py", "QVFILM_START_WIN10.cmd"):
+        for name in ("preflight.py", "compatibility_audit.py", "QVFILM_START_WIN10.cmd"):
             shutil.copy2(src / name, prog / name)
 
         image = root / "Photo" / "_C2A8994.JPG"
@@ -38,6 +38,7 @@ def main():
             "1", str(image), str(card),
             "2", str(card), str(backup),
             "3", str(backup),
+            "5", "", str(card),
             "4", "",
         ])
         env = os.environ.copy()
@@ -72,7 +73,13 @@ def main():
         assert (backup / "BACKUP_MANIFEST.json").is_file(), "No backup manifest"
         assert (card / "autoexec.bin").read_bytes() == original_contents
         assert not (card / "BACKUP_COMPLETE.txt").exists()
-        print("PASS: Windows CMD + spaces in input/prog/card/backup paths; report+SHA verification")
+        audit_file = prog / "reports" / "qvfilm_compatibility_audit.json"
+        assert audit_file.is_file(), "Compatibility audit file missing"
+        review = json.loads(audit_file.read_text(encoding="utf-8"))
+        assert review["installation_decision"] == "HOLD_NOT_APPROVED", review
+        assert review["card_status"]["status"] == "ML_FILES_SEEN_UNVERIFIED", review
+        assert not review["card_status"]["bootable_verified"], review
+        print("PASS: Windows CMD + spaces, backup, card audit, HOLD_NOT_APPROVED and SHA verification")
 
     return 0
 
