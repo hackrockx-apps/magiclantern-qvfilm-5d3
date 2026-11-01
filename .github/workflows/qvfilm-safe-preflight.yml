@@ -7,6 +7,7 @@ on:
       - qvfilm/v0.2.1-win10-hotfix
       - qvfilm/v0.2.2-compatibility-audit
       - qvfilm/v0.2.3-install-readiness
+      - qvfilm/v0.3.0-baseline-staging
   workflow_dispatch:
 
 permissions:
@@ -23,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile qvfilm/preflight/preflight.py qvfilm/preflight/compatibility_audit.py qvfilm/preflight/install_readiness.py
+          python3 -m py_compile qvfilm/preflight/preflight.py qvfilm/preflight/compatibility_audit.py qvfilm/preflight/install_readiness.py qvfilm/preflight/baseline_stager.py
           python3 -m unittest discover -v -s qvfilm/preflight -p 'test_*.py'
       - name: Validate non-destructive package content and generate distribution
         shell: bash
@@ -38,15 +39,17 @@ jobs:
           allowed = ["README_FIRST_VI.md","preflight.py","test_preflight.py",
                      "compatibility_audit.py","test_compatibility_audit.py",
                      "install_readiness.py","test_install_readiness.py",
+                     "baseline_stager.py","test_baseline_stager.py",
+                     "QVFILM_BASELINE_CHECK_WIN10.cmd",
                      "QVFILM_START_WIN10.cmd","tools/README_ADD_EXIFTOOL.txt"]
           assert all((src / x).is_file() for x in allowed)
           assert not any(Path(x).suffix.lower() in (".mo", ".fir", ".bin", ".exe") for x in allowed)
-          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.3.zip"
+          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.3.0.zip"
           with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
               for path in allowed:
                   z.write(src / path, arcname=path)
           digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.3.sha256").write_text(
+          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.3.0.sha256").write_text(
               digest + "  " + zip_path.name + "\n", encoding="utf-8")
           print("READ-ONLY PACKAGE SHA256", digest)
           print("ARCHIVE CONTENTS")
@@ -57,7 +60,7 @@ jobs:
       - name: Publish offline package and checksum for review
         uses: actions/upload-artifact@v4
         with:
-          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.2.3_NOT_INSTALLABLE
+          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.3.0_NOT_INSTALLABLE
           path: dist/
           if-no-files-found: error
           retention-days: 30
