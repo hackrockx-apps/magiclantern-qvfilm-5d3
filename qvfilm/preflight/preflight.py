@@ -17,7 +17,7 @@ TARGET_CAMERA = "EOS 5D Mark III"
 TARGET_FIRMWARE = "1.2.3"
 TARGET_PLATFORM = "5D3.123"
 COPY_ROOTS = ("autoexec.bin", "ML", "ML-SETUP.FIR")
-REPORT_VERSION = "0.2.0"
+REPORT_VERSION = "0.2.1"
 FW_PATTERN = re.compile(r"(?<!\d)(1\.\d+\.\d+)(?!\d)")
 
 
@@ -55,9 +55,11 @@ def classify_metadata(metadata):
             "No definitive Canon firmware 1.2.3 tag. Internal MPU 9.0.1/A6 is only supporting evidence.")
 
 def find_exiftool():
-    bundled = Path(__file__).resolve().parent / "tools" / "exiftool.exe"
-    if bundled.is_file():
-        return str(bundled)
+    folder = Path(__file__).resolve().parent
+    for candidate in (folder / "tools" / "exiftool.exe",
+                      folder / "exiftool.exe"):
+        if candidate.is_file():
+            return str(candidate)
     for name in ("exiftool", "exiftool.exe"):
         hit = shutil.which(name)
         if hit:
@@ -69,8 +71,10 @@ def collect_metadata(photo):
     exe = find_exiftool()
     if not exe:
         raise RuntimeError(
-            "ExifTool not found. Install from https://exiftool.org/ and place "
-            "exiftool.exe in tools/ or add it to PATH. No firmware decision was made.")
+            "ExifTool missing. Put exiftool.exe AND the exiftool_files folder "
+            "from the official Windows ZIP (https://exiftool.org/) into "
+            "the tools folder beside preflight.py, or add ExifTool to PATH. "
+            "Rename exiftool(-k).exe to exiftool.exe. No firmware decision was made.")
     cmd = [exe, "-j", "-G1", "-s", "-a",
            "-Model", "-CameraModelName",
            "-CanonFirmwareVersion", "-FirmwareVersion", "-FirmwareInfo",
@@ -223,10 +227,80 @@ def verify_backup(args):
     return 0
 
 
+def strip_outer_quotes(value):
+    """Remove only a matching outer pair of quotes pasted from Explorer."""
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] == '"':
+        return value[1:-1]
+    return value
+
+
+def interactive(args):
+    """Python owns user input: CMD never interpolates space-containing paths."""
+    base = Path(__file__).resolve().parent
+    print("\nQVFilm SAFE PREFLIGHT v" + REPORT_VERSION)
+    print("No camera/card writes. Original ML boot card must remain unchanged.")
+    while True:
+        print("\n1. Scan ORIGINAL JPG / CR2 firmware metadata")
+        print("2. Back up known-good Magic Lantern card to PC")
+        print("3. Verify SHA-256 backup manifest")
+        print("4. Exit")
+        try:
+            choice = input("Select 1-4: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nExit. No card files modified.")
+            return 0
+        if choice == "4":
+            return 0
+        if choice not in ("1", "2", "3"):
+            print("Invalid choice.")
+            continue
+        try:
+            if choice == "1":
+                photo = strip_outer_quotes(input("Original JPG/CR2 path: "))
+                if not photo:
+                    print("Skipped scan: no original photo selected.")
+                    continue
+                card = strip_outer_quotes(input(
+                    "Optional CF/SD card drive/folder (ENTER to skip): "))
+                code = scan(argparse.Namespace(
+                    photo=photo, card=card or None, out=str(base / "reports")))
+            elif choice == "2":
+                print("Card is read-only. Existing photos in DCIM are not backed up.")
+                card = strip_outer_quotes(input(
+                    "Existing known-good CF/SD card drive/folder: "))
+                if not card:
+                    print("Skipped backup: card path missing.")
+                    continue
+                dest = strip_outer_quotes(input(
+                    "NEW nonexisting PC backup folder (NOT on the card): "))
+                if not dest:
+                    print("Skipped backup: destination missing.")
+                    continue
+                code = backup(argparse.Namespace(
+                    card=card, dest=dest, max_gb=4))
+            else:
+                dest = strip_outer_quotes(input("PC backup folder to verify: "))
+                if not dest:
+                    print("Skipped verification: folder missing.")
+                    continue
+                code = verify_backup(argparse.Namespace(dir=dest))
+            if code:
+                print("CHECK NOT PASSED (code %s). No install permission." % code)
+            else:
+                print("Step finished. Does NOT grant permission to install firmware.")
+        except (OSError, ValueError, RuntimeError,
+                json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
+            print("BLOCKED / ERROR: " + str(exc))
+            print("No files written to the camera card.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="QVFilm 5D3.123 OFFLINE PREFLIGHT. No writes to camera/SD/CF.")
     sub = parser.add_subparsers(dest="command", required=True)
+    p = sub.add_parser("interactive", help="Safe Windows interactive prompt; no CMD path parsing")
+    p.set_defaults(func=interactive)
     p = sub.add_parser("scan", help="Read the original camera JPG/CR2 metadata")
     p.add_argument("--photo", required=True)
     p.add_argument("--card")

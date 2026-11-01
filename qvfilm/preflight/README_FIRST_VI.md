@@ -1,8 +1,34 @@
-# QVFilm 5D3.123 — Gói kiểm tra tương thích & dự phòng an toàn v0.2.0
+# QVFilm 5D3.123 — Gói kiểm tra tương thích & dự phòng an toàn v0.2.1
 
 **Dành cho Windows 10. Chỉ kiểm tra và sao lưu. KHÔNG chứa firmware để cài vào máy.**
 
 Máy mục tiêu: **Canon EOS 5D Mark III**, firmware công khai **1.2.3**, nền Magic Lantern `5D3.123`.
+
+## BẢN V0.2.1 — SỬA LỖI WINDOWS 10
+
+Bản này khắc phục hai sự cố đã thấy trong ảnh nghiệm thu: `ExifTool not found` và `unrecognized arguments: Mark III Upgrade...`.
+
+**Đường dẫn thư mục có dấu cách:** `QVFILM_START_WIN10.cmd` giờ chỉ khởi chạy `preflight.py interactive`. Python trực tiếp đọc đường dẫn anh nhập nên không còn phải ghép lệnh CMD với `Z:\5D Mark III Upgrade\...`. Có thể nhập đường dẫn có dấu cách, có hoặc không có dấu ngoặc kép bao ngoài.
+
+**Cài ExifTool đúng cách (KHÔNG cài vào Canon):**
+
+1. Tải Windows ExifTool 64-bit từ https://exiftool.org/ rồi giải nén.
+2. Trong thư mục giải nén sẽ có `exiftool(-k).exe` và một thư mục phụ `exiftool_files`.
+3. Đổi tên `exiftool(-k).exe` thành `exiftool.exe`.
+4. Chép **CẢ HAI** vào thư mục `tools` nằm cùng cấp với `preflight.py`. **Không chỉ chép file exe**: bản Windows mới cần cả `exiftool_files`. Nếu máy đã cài ExifTool vào PATH, có thể giữ nguyên cài đặt đó.
+5. Mở CMD và chạy `tools\exiftool.exe -ver` từ thư mục chứa `preflight.py` để kiểm tra. Nếu hiện số phiên bản thì chạy lại `QVFILM_START_WIN10.cmd`.
+
+Ví dụ ảnh anh đã nhập:
+
+```text
+Z:\5D Mark III Upgrade\Photo\_C2A8994.JPG
+```
+
+Khi hỏi ổ thẻ, nhập `G:\` nếu muốn kiểm tra sự hiện diện của các file; hoặc **nhấn Enter** để bỏ qua, vẫn kiểm tra metadata ảnh như bình thường.
+
+Lưu ý: Bản v0.2.0 trước đó có thể đã tạo báo cáo `REVIEW_REQUIRED` do thiếu ExifTool. Chạy lại bản v0.2.1 sẽ tạo báo cáo mới tại `reports\qvfilm_preflight_report.json`. Bản v0.2.1 vẫn **không chứa file cài firmware Canon** và không ghi lên thẻ.
+
+---
 
 ## 1. Những điều cần biết
 
@@ -14,7 +40,7 @@ Dòng `9.0.1 A6(34)` trong ảnh màn hình máy của anh nhiều khả năng l
 
 1. Lắp thẻ nhớ, dùng chính Canon 5D Mark III chụp **một ảnh JPG hoặc CR2 mới**.
 2. Chép **file gốc nguyên vẹn** từ thẻ sang Windows 10. Không dùng ảnh chụp màn hình, ảnh qua Messenger, ảnh đã xuất lại hoặc xóa metadata.
-3. Tải **ExifTool cho Windows** từ https://exiftool.org/ . Đổi tên file thực thi thành `exiftool.exe` và đặt trong thư mục `tools` của gói (hoặc thêm vào PATH). ExifTool không đi kèm gói QVFilm.
+3. Tải **ExifTool cho Windows** từ https://exiftool.org/ . Đổi tên `exiftool(-k).exe` thành `exiftool.exe`, đồng thời đặt **cả `exiftool.exe` và thư mục `exiftool_files`** trong thư mục `tools` của gói (hoặc thêm vào PATH). ExifTool không đi kèm gói QVFilm.
 4. Cần có Python 3 trên Windows 10.
 
 ## 3. Chạy chương trình trên Windows 10
