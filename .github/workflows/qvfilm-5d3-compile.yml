@@ -1,0 +1,41 @@
+name: QVFilm 5D3.123 baseline / prototype
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.1.0-ui-prototype
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+      - name: Toolchain setup
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends make gcc-arm-none-eabi binutils-arm-none-eabi gcc g++ libc6-dev mercurial python3 perl
+          arm-none-eabi-gcc --version
+      - name: Build pristine 5D3.123 platform baseline
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C platform/5D3.123 all PYTHON=python3 2>&1 | tee qvfilm-baseline.log
+      - name: Attach logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qvfilm-baseline-log
+          path: qvfilm-baseline.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Report build outputs (not installable)
+        if: success()
+        shell: bash
+        run: |
+          find platform/5D3.123 -maxdepth 1 -type f \( -name 'autoexec.bin' -o -name 'autoexec' \) -print -exec sha256sum {} \;
