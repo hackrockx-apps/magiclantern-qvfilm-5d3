@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # Unit tests use synthetic metadata; they do NOT access any camera, card or real firmware.
 import json
+import io
+from contextlib import redirect_stdout
+from unittest.mock import patch
 import sys
 import tempfile
 import unittest
@@ -102,6 +105,45 @@ class ReadOnlyBackupTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             preflight.backup(SimpleNamespace(card=str(empty),
                                              dest=str(self.root / "saved"), max_gb=1))
+
+
+class WindowsPathRegressionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name) / "5D Mark III Upgrade"
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.photo = self.root / "Photo" / "_C2A8994.JPG"
+        self.photo.parent.mkdir(parents=True, exist_ok=True)
+        self.photo.write_bytes(b"fake image file for unit test")
+
+    def test_user_input_with_spaces_and_outer_quotes(self):
+        metadata = {"EXIF:Model": "Canon EOS 5D Mark III",
+                    "Canon:CanonFirmwareVersion": "1.2.3"}
+        prompt = ["1", '"' + str(self.photo) + '"', "", "4"]
+        fake_module = self.root / "preflight.py"
+        log = io.StringIO()
+        with patch.object(preflight, "__file__", str(fake_module)), \
+             patch.object(preflight, "collect_metadata", return_value=(metadata, "exiftool")), \
+             patch("builtins.input", side_effect=prompt), redirect_stdout(log):
+            self.assertEqual(preflight.interactive(None), 0)
+        report = self.root / "reports" / "qvfilm_preflight_report.json"
+        self.assertTrue(report.is_file())
+        data = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(data["status"], "PASS_METADATA")
+        self.assertEqual(data["photo_name"], "_C2A8994.JPG")
+        self.assertIn("QVFilm PREFLIGHT: PASS_METADATA", log.getvalue())
+
+    def test_missing_exiftool_is_review_not_crash(self):
+        prompt = ["1", str(self.photo), "", "4"]
+        fake_module = self.root / "preflight.py"
+        with patch.object(preflight, "__file__", str(fake_module)), \
+             patch.object(preflight, "find_exiftool", return_value=None), \
+             patch("builtins.input", side_effect=prompt), redirect_stdout(io.StringIO()):
+            self.assertEqual(preflight.interactive(None), 0)
+        data = json.loads((self.root / "reports" / "qvfilm_preflight_report.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["status"], "REVIEW_REQUIRED")
+        self.assertIn("exiftool_files", data["reason"])
 
 
 if __name__ == "__main__":
