@@ -28,11 +28,23 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertIn('menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));', result)
         self.assertLess(result.index('menu_add("Movie", qvfilm_hud_menu'),
                         result.index('menu_add("Movie", raw_video_menu'))
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.1")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.2")', result)
         self.assertIn('qvfilm_top_info', result)
         self.assertIn('qvfilm_bottom_info', result)
         self.assertIn('MODULE_CONFIG(qvfilm_hud_enabled)', result)
         self.assertIn('ASSERT(0);', result)  # not silently hiding other memory/encoder failures
+
+    def test_cinema_overlay_uses_actual_raw_bit_depth(self):
+        result = qv.patch(self.source)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.2")', result)
+        self.assertIn('CHOICES("OFF", "Info bars", "Cinema overlay")', result)
+        self.assertIn('static void qvfilm_draw_cinema_overlay(void)', result)
+        self.assertIn('qvfilm_draw_cinema_overlay();', result)
+        self.assertIn('res_x, res_y, BPP,', result)
+        self.assertNotIn('res_x, res_y, BPP_D,', result)
+        self.assertIn('RAW_IS_RECORDING ? "REC"', result)
+        self.assertIn('!liveview_display_idle()', result)
+        self.assertIn('START/STOP records RAW', result)
 
     def test_patching_twice_fails_closed(self):
         first = qv.patch(self.source)
