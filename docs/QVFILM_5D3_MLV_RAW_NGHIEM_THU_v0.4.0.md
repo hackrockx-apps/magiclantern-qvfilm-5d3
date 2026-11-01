@@ -1,4 +1,4 @@
-# QVFilm — Magic Lantern 5D3 v0.4.0: Nghiệm thu quay MLV RAW lần đầu
+# QVFilm — Magic Lantern 5D3 v0.4.1: Nghiệm thu quay MLV RAW lần đầu
 
 ## Trạng thái
 
@@ -10,10 +10,10 @@ Canon 5D Mark III + Magic Lantern \`2025-06-20.5D3.123\`: cài và khởi độn
 
 1. Pin đầy, máy ở Movie/LiveView, nhấn nút **ERASE** để mở Magic Lantern.
 2. Chuyển đến tab **Modules** (biểu tượng nhiều ô vuông).
-3. Chụp ảnh rõ toàn bộ danh sách. Nếu có \`mlv_rec\`, chỉ bật \`mlv_rec\` (không bật đồng thời nhiều module ghi RAW như \`raw_rec\` / \`mlv_lite\`).
-4. Nếu chỉ thấy các tên module khác, chưa tự bật — gửi ảnh để xác định trước.
-5. Sau khi bật đúng \`mlv_rec\`, thoát menu và khởi động lại máy bình thường.
-6. Mở Magic Lantern → tab **Movie**; xác nhận mục **RAW video (MLV)** xuất hiện. Chụp ảnh trang Movie và submenu RAW (thường dùng **Q** để mở submenu).
+3. Anh đã kiểm tra: bản Magic Lantern 2025-06-20.5D3.123 có ba module: `mlv_lite.mo`, `mlv_play.mo`, `mlv_snd.mo`. **Không thiếu `mlv_rec.mo`**: `mlv_lite.mo` là bộ ghi MLV RAW của bản này.
+4. Bật **chỉ `mlv_lite.mo`**, giữ `mlv_play.mo` và `mlv_snd.mo` ở OFF trong thử nghiệm quay không âm thanh đầu tiên. **Không** chép `mlv_rec.mo`/`raw_rec.mo` từ bản ML khác.
+5. Thoát menu và tắt/bật máy bình thường; xác nhận `mlv_lite.mo` đã được nạp thành công và không có thông báo lỗi.
+6. Mở tab **Movie**; tìm `RAW video (MLV)` hoặc `RAW video`. Chụp ảnh mục và submenu RAW bằng phím `Q`. Nếu thiếu menu, dừng và báo lại trạng thái module.
 
 ## B. Thử một clip ngắn
 
