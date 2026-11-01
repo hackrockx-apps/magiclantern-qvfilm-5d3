@@ -16,26 +16,58 @@ jobs:
     steps:
       - name: Check out selected branch
         uses: actions/checkout@v4
-      - name: Toolchain setup
+        with:
+          fetch-depth: 1
+      - name: Prepare ARM toolchain and newlib headers
+        shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends make gcc-arm-none-eabi binutils-arm-none-eabi gcc g++ libc6-dev mercurial python3 perl
+          sudo apt-get install -y --no-install-recommends make gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-dev libnewlib-arm-none-eabi gcc g++ libc6-dev mercurial python3 perl
           arm-none-eabi-gcc --version
-      - name: Build pristine 5D3.123 platform baseline
+          test -f /usr/include/newlib/sys/types.h || find /usr -path '*newlib*/sys/types.h' | head
+      - name: Build original upstream fork (master) for baseline
+        shell: bash
+        run: |
+          mkdir -p qvfilm-logs
+          git fetch origin master --depth=1
+          git worktree add --detach ../qvfilm-base origin/master
+          set -o pipefail
+          make -C ../qvfilm-base/platform/5D3.123 all PYTHON=python3 2>&1 | tee qvfilm-logs/baseline.log
+      - name: Build QVFIL prototype for 5D3.123
         shell: bash
         run: |
           set -o pipefail
-          make -C platform/5D3.123 all PYTHON=python3 2>&1 | tee qvfilm-baseline.log
-      - name: Attach logs
+          make -C platform/5D3.123 all PYTHON=python3 2>&1 | tee qvfilm-logs/qvfil-core.log
+          make -C modules/mlv_lite all PYTHON=python3 2>&1 | tee qvfilm-logs/qvfil-mlv-lite.log
+      - name: Validate original Movie menu and QVFIL registration
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('modules/mlv_lite/mlv_lite.c').read_text()
+          ui = Path('modules/mlv_lite/qvfilm_ui.inc').read_text()
+          assert '#include "qvfilm_ui.inc"' in s
+          assert 'menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));' in s
+          assert 'qvfilm_register_menu();' in s
+          assert 'menu_add("QVFIL", qvfilm_menu, COUNT(qvfilm_menu));' in ui
+          assert 'if (cam_5d3_123)' in ui
+          assert 'CUSTOM_DRAW_THIS_MENU' in ui
+          print("PASS: both Movie and QVFIL menu registrations exist")
+          PY
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qvfilm-baseline-log
-          path: qvfilm-baseline.log
+          name: qvfilm-build-logs
+          path: qvfilm-logs/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Report build outputs (not installable)
+      - name: Attach prototype module for offline review ONLY
         if: success()
-        shell: bash
-        run: |
-          find platform/5D3.123 -maxdepth 1 -type f \( -name 'autoexec.bin' -o -name 'autoexec' \) -print -exec sha256sum {} \;
+        uses: actions/upload-artifact@v4
+        with:
+          name: qvfilm-5d3-prototype-NOT-FOR-INSTALLATION
+          path: |
+            modules/mlv_lite/mlv_lite.mo
+          if-no-files-found: error
+          retention-days: 7
