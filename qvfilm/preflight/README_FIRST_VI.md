@@ -4,6 +4,22 @@
 
 Máy mục tiêu: **Canon EOS 5D Mark III**, firmware công khai **1.2.3**, nền Magic Lantern `5D3.123`.
 
+## V0.2.2 — KIỂM TRA TƯƠNG THÍCH / THẺ NHỚ CHỈ ĐỌC
+
+Bản này bổ sung **mục 5**: "Compatibility audit from JSON + optional CF/SD card" trong QVFILM_START_WIN10.cmd.
+
+- Đọc tệp \`reports/qvfilm_preflight_report.json\` từ ảnh gốc trên máy tính.
+- Với MPU \`9.0.1 A6(34)\`, chỉ đánh dấu **ứng viên 1.2.3 theo bảng cộng đồng ExifTool**, KHÔNG xác nhận firmware công khai. Trạng thái luôn \`HOLD_NOT_APPROVED\`.
+- Nếu kết nối thẻ CF/SD qua đầu đọc, nhập ổ \`G:\` để kiểm tra chỉ đọc \`autoexec.bin\`, \`ML/\`, \`ML-SETUP.FIR\` và tên module. Chương trình không đọc/chép DCIM.
+- Ghi báo cáo \`reports/qvfilm_compatibility_audit.json\` trên PC. File hash chứng minh nhận diện tệp, không chứng minh thẻ có khả năng boot.
+- Giữ thẻ Magic Lantern hoạt động tốt (nếu có), sao lưu và kiểm tra bằng chức năng 2 và 3. Nếu chưa có thẻ ML đã hoạt động, không đánh dấu "phương án khôi phục" là PASS.
+
+**Báo cáo thực tế \`_C2A8994.JPG\`:** đúng thân máy 5D Mark III; có bằng chứng MPU phù hợp với ví dụ Canon 1.2.3; còn thiếu một nguồn xác minh độc lập về public firmware và thiếu dữ liệu thẻ. Vì thế **chưa đủ điều kiện cài QVFIL**.
+
+Nguồn tham khảo MPU: https://github.com/exiftool/exiftool/issues/399 .
+
+---
+
 ## BẢN V0.2.1 — SỬA LỖI WINDOWS 10
 
 Bản này khắc phục hai sự cố đã thấy trong ảnh nghiệm thu: `ExifTool not found` và `unrecognized arguments: Mark III Upgrade...`.
