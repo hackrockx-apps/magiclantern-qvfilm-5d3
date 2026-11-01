@@ -40,7 +40,7 @@ def patch(source):
         '     * This is a CONTAINMENT measure, not a repair of lossless compression.\n'
         '     * 14-bit uncompressed remains available for a fast enough card.\n'
         '     * Restrict to verified 5D3.123, leave other cameras unchanged. */\n'
-        '    if (cam_5d3_123 && OUTPUT_COMPRESSION)\n'
+        '    if (is_camera("5D3", "*") && OUTPUT_COMPRESSION)\n'
         '    {\n'
         '        printf("QVFIL: Lossless RAW blocked on 5D3.123 (known mlv_lite ASSERT).\\n");\n'
         '        NotifyBox(6000, "QVFIL: Lossless blocked. Use RAW uncompressed.");\n'
@@ -54,7 +54,7 @@ def patch(source):
         source,
         'static MENU_UPDATE_FUNC(output_format_update)\n{\n    refresh_raw_settings(0);',
         'static MENU_UPDATE_FUNC(output_format_update)\n{\n    refresh_raw_settings(0);\n'
-        '    if (cam_5d3_123 && OUTPUT_COMPRESSION)\n'
+        '    if (is_camera("5D3", "*") && OUTPUT_COMPRESSION)\n'
         '        MENU_SET_WARNING(MENU_WARN_NOT_WORKING,\n'
         '            "QVFIL: Lossless disabled on 5D3.123; choose RAW uncompressed.");'
     )
@@ -65,12 +65,12 @@ def patch(source):
     ui = r"""
 /* QVFilm Cinema Monitor: readable cinema status in the existing LV info bars.
  * Visually inspired by dedicated cinema-camera HUDs, not a Blackmagic UI copy.
- * Opt in via Movie -> QVFIL Cinema HUD. Draw is handled by core LVInfo.
+ * Opt in via first Movie item -> QVFIL Cinema HUD. Draw via core LVInfo.
  */
 static LVINFO_UPDATE_FUNC(qvfilm_top_info)
 {
     LVINFO_BUFFER(48);
-    if (!qvfilm_hud_enabled || !cam_5d3_123 || !lv || !is_movie_mode()) return;
+    if (!qvfilm_hud_enabled || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
     int fps = fps_get_current_x1000();
     snprintf(buffer, sizeof(buffer), "QVFIL %s %d.%02d",
              RAW_IS_RECORDING ? "REC" : "STBY",
@@ -82,7 +82,7 @@ static LVINFO_UPDATE_FUNC(qvfilm_top_info)
 static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
 {
     LVINFO_BUFFER(64);
-    if (!qvfilm_hud_enabled || !cam_5d3_123 || !lv || !is_movie_mode()) return;
+    if (!qvfilm_hud_enabled || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
     /* The resolution and bit depth come from the actual MLV recorder state,
      * never fake 3K or advertise lossless as operational. */
     snprintf(buffer, sizeof(buffer), "%dx%d  %db %s  ISO%u",
@@ -93,13 +93,19 @@ static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
     item->color_bg = COLOR_BG_DARK;
 }
 
+static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
+{
+    MENU_SET_RINFO("QVFIL v0.5.1");
+}
+
 static struct menu_entry qvfilm_hud_menu[] = {
     {
         .name = "QVFIL Cinema HUD",
         .priv = &qvfilm_hud_enabled,
+        .update = qvfilm_hud_menu_update,
         .max = 1,
         .help = "Cinema camera-style status strips in Movie LiveView.",
-        .help2 = "Only changes display. Does not alter recording settings.",
+        .help2 = "Build v0.5.1. Requires Movie LiveView / Global Draw.",
     },
 };
 """
@@ -132,10 +138,10 @@ static struct menu_entry qvfilm_hud_menu[] = {
     source = replace_once(
         source,
         '    menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));',
-        '    menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));\n'
-        '    /* Preserve existing Movie tab; add one optional QVFIL toggle. */\n'
-        '    if (cam_5d3_123)\n'
-        '        menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));'
+        '    /* QVFIL first so it is not lost below the Movie menu page fold. */\n'
+        '    if (is_camera("5D3", "*"))\n'
+        '        menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));\n'
+        '    menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));'
     )
     source = replace_once(
         source,
@@ -166,7 +172,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.0 source patch applied: 5D3 lossless fail-closed guard + opt-in LVInfo HUD")
+    print("QVFIL v0.5.1 source patch applied: 5D3 lossless fail-closed guard + visible opt-in LVInfo HUD")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
