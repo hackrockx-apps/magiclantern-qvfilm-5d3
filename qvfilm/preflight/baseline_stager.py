@@ -18,7 +18,8 @@ VERSION = "0.3.0"
 MAX_ENTRIES = 1200
 MAX_UNCOMPRESSED = 128 * 1024 * 1024
 MAX_COMPRESSED = 64 * 1024 * 1024
-REQUIRED = {"autoexec.bin", "ML-SETUP.FIR"}
+REQUIRED = {"autoexec.bin"}
+KNOWN_SETUP_FIRS = {"ML-SETUP.FIR", "ML-5D3-123.FIR", "ML5D3123.FIR"}
 FIRMWARE_BINS = {".FIR", ".BIN"}
 FORBIDDEN = {".EXE", ".BAT", ".CMD", ".PS1", ".VBS", ".SCR"}
 
@@ -108,16 +109,20 @@ def analyze_archive(path):
             upper = {f.upper(): f for f in files}
             ml_files = [f for f in files if f.upper().startswith("ML/")]
             root_missing = [r for r in REQUIRED if r.upper() not in upper]
+            setup_files = [f for f in files if f.upper() in KNOWN_SETUP_FIRS]
+            if not setup_files:
+                root_missing.append("5D3.123 matching installer .FIR")
             unknown_firmware = [f for f in files
                                 if Path(f).suffix.upper() in FIRMWARE_BINS
-                                and f.upper() not in {"ML-SETUP.FIR", "AUTOEXEC.BIN"}
+                                and f.upper() not in (KNOWN_SETUP_FIRS | {"AUTOEXEC.BIN"})
                                 and not f.upper().startswith("ML/")]
             result["archive_readable"] = True
             result["structure"] = {
                 "file_count": len(files),
                 "total_uncompressed_bytes": sum(f.file_size for f in entries),
                 "autoexec_present": "AUTOEXEC.BIN" in upper,
-                "setup_fir_present": "ML-SETUP.FIR" in upper,
+                "setup_fir_present": bool(setup_files),
+                "setup_fir_names": setup_files,
                 "ml_file_count": len(ml_files),
                 "missing_required": sorted(root_missing),
                 "unexpected_root_firmware_bins": unknown_firmware,
