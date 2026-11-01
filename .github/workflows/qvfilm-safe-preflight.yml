@@ -3,7 +3,8 @@ name: QVFilm read-only preflight and recovery QA
 on:
   push:
     branches:
-      - qvfilm/v0.2.0-preflight-recovery
+      - qvfilm/v0.2.1-preflight-recovery
+      - qvfilm/v0.2.1-win10-hotfix
   workflow_dispatch:
 
 permissions:
@@ -36,12 +37,12 @@ jobs:
                      "QVFILM_START_WIN10.cmd","tools/README_ADD_EXIFTOOL.txt"]
           assert all((src / x).is_file() for x in allowed)
           assert not any(Path(x).suffix.lower() in (".mo", ".fir", ".bin", ".exe") for x in allowed)
-          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.0.zip"
+          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.1.zip"
           with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
               for path in allowed:
                   z.write(src / path, arcname=path)
           digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.0.sha256").write_text(
+          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.2.1.sha256").write_text(
               digest + "  " + zip_path.name + "\n", encoding="utf-8")
           print("READ-ONLY PACKAGE SHA256", digest)
           print("ARCHIVE CONTENTS")
@@ -52,7 +53,22 @@ jobs:
       - name: Publish offline package and checksum for review
         uses: actions/upload-artifact@v4
         with:
-          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.2.0_NOT_INSTALLABLE
+          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.2.1_NOT_INSTALLABLE
           path: dist/
           if-no-files-found: error
           retention-days: 30
+
+  windows-batch-smoke:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Unit tests on Windows Python
+        shell: pwsh
+        run: |
+          python -m unittest discover -v -s qvfilm/preflight -p 'test_preflight.py'
+      - name: Smoke test real CMD launcher with spaces in paths
+        shell: pwsh
+        run: |
+          python qvfilm/preflight/test_windows_batch.py
