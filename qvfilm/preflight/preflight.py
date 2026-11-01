@@ -35,18 +35,17 @@ def is_inside(candidate, parent):
 
 def classify_metadata(metadata):
     """Pure classifier. An MPU string alone is NEVER a firmware-version pass."""
-    fields = {str(k).split(":")[-1]: str(v).strip()
-              for k, v in metadata.items() if v is not None}
-    model = fields.get("Model", fields.get("CameraModelName", "")).strip()
-    if "5D Mark III" not in model or "5D Mark II" in model:
-        return ("BLOCK_MISMATCH" if model else "REVIEW_REQUIRED",
-                "Original file does not identify Canon EOS 5D Mark III." if model
-                else "Camera model tag missing.")
+    models = [str(value).strip() for key, value in metadata.items()
+              if key.split(":")[-1] in ("Model", "CameraModelName") and value is not None]
+    if not models:
+        return ("REVIEW_REQUIRED", "Camera model tag missing.")
+    if any("5D Mark III" not in v or "5D Mark II" in v for v in models):
+        return ("BLOCK_MISMATCH", "Camera model does not consistently identify Canon EOS 5D Mark III.")
     candidates = []
-    for key in ("CanonFirmwareVersion", "FirmwareVersion"):
-        val = fields.get(key, "")
-        # ExifTool sometimes emits Canon's internal MPU value as a firmware line.
-        candidates.extend(FW_PATTERN.findall(val))
+    for key, value in metadata.items():
+        if key.split(":")[-1] in ("CanonFirmwareVersion", "FirmwareVersion") and value is not None:
+            # Do not treat internal MPU 9.0.1 as a Canon 1.x firmware revision.
+            candidates.extend(FW_PATTERN.findall(str(value)))
     unique = sorted(set(candidates))
     if any(v != TARGET_FIRMWARE for v in unique):
         return ("BLOCK_MISMATCH", "Firmware metadata conflicts with required 1.2.3: " + ", ".join(unique))
@@ -54,7 +53,6 @@ def classify_metadata(metadata):
         return ("PASS_METADATA", "5D Mark III and Canon firmware 1.2.3 identified in the original photo metadata.")
     return ("REVIEW_REQUIRED",
             "No definitive Canon firmware 1.2.3 tag. Internal MPU 9.0.1/A6 is only supporting evidence.")
-
 
 def find_exiftool():
     bundled = Path(__file__).resolve().parent / "tools" / "exiftool.exe"
