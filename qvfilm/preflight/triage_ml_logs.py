@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""QVFilm v0.4.3: read-only triage of copied Magic Lantern text logs on a PC.
+"""QVFilm v0.4.4: read-only triage of copied Magic Lantern text logs on a PC.
 
 Does not read/write camera devices, update any .MO/.FIR, or decide install safety.
 Never uploads logs. Place copies in a local PC directory, not on the SD/CF card.
@@ -62,6 +62,33 @@ def triage_file(path):
     }
 
 
+
+def summarize_logs(items):
+    """Group identical log bytes; file count is not a crash-event counter."""
+    groups = {}
+    for entry in items:
+        sha = entry["file_sha256"]
+        groups.setdefault(sha, []).append(entry["file_name"])
+    error_codes = sorted({f["compression_error"]
+                          for item in items
+                          for f in item["findings"]
+                          if "compression_error" in f})
+    assert_count = sum(any("mlv_assert" in f["kinds"] for f in item["findings"])
+                       for item in items)
+    return {
+        "log_files": len(items),
+        "unique_file_contents": len(groups),
+        "duplicate_groups": [
+            {"file_count": len(names), "file_names": names}
+            for names in groups.values()
+        ],
+        "files_with_mlv_lite_2742_assert": assert_count,
+        "explicit_lossless_return_codes": error_codes,
+        "root_cause_decision": "ERROR_CODE_NOT_CAPTURED" if not error_codes else
+                               "ERROR_CODE_PRESENT_INVESTIGATE_CONTEXT",
+        "caution": "Repeated filenames or identical logs do NOT establish separate crash events.",
+    }
+
 def main():
     parser = argparse.ArgumentParser(description="QVFilm offline ML log triage (PC-copy only)")
     parser.add_argument("--folder", required=True, help="Folder on PC containing copied log files")
@@ -77,7 +104,7 @@ def main():
     if not logs:
         parser.error("No .LOG/.TXT files. Copy original log(s) from the camera card to a PC folder first.")
     report = {
-        "tool": "QVFilm ML Log Triage v0.4.3",
+        "tool": "QVFilm ML Log Triage v0.4.4",
         "status": "DIAGNOSIS_ONLY",
         "source": "COPIED_LOGS_ON_PC",
         "logs": [triage_file(file) for file in logs[:80]],
@@ -87,6 +114,7 @@ def main():
             "Do not install a new firmware/module just because this report parses.",
         ],
     }
+    report["summary"] = summarize_logs(report["logs"])
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print("Read-only diagnosis saved:", dest)
