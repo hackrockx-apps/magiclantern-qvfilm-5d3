@@ -11,6 +11,7 @@ on:
       - qvfilm/v0.3.1-provenance-gate
       - qvfilm/v0.4.0-raw-acceptance
       - qvfilm/v0.4.3-uncompressed-pass-log-triage
+      - qvfilm/v0.4.4-assert-evidence
   workflow_dispatch:
 
 permissions:
@@ -50,12 +51,12 @@ jobs:
                      "QVFILM_START_WIN10.cmd","tools/README_ADD_EXIFTOOL.txt"]
           assert all((src / x).is_file() for x in allowed)
           assert not any(Path(x).suffix.lower() in (".mo", ".fir", ".bin", ".exe") for x in allowed)
-          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.4.3.zip"
+          zip_path = dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.4.4.zip"
           with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
               for path in allowed:
                   z.write(src / path, arcname=path)
           digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.4.3.sha256").write_text(
+          (dist / "QVFILM_5D3_PREFLIGHT_RECOVERY_WIN10_v0.4.4.sha256").write_text(
               digest + "  " + zip_path.name + "\n", encoding="utf-8")
           print("READ-ONLY PACKAGE SHA256", digest)
           print("ARCHIVE CONTENTS")
@@ -66,7 +67,7 @@ jobs:
       - name: Publish offline package and checksum for review
         uses: actions/upload-artifact@v4
         with:
-          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.4.3_NOT_INSTALLABLE
+          name: QVFILM_5D3_WIN10_PREFLIGHT_RECOVERY_v0.4.4_NOT_INSTALLABLE
           path: dist/
           if-no-files-found: error
           retention-days: 30
