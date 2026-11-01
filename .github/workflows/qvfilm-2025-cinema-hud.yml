@@ -62,7 +62,37 @@ jobs:
           set -o pipefail
           make -C upstream-2025/modules/raw_video/mlv_lite PYTHON=python3 \
             2>&1 | tee qvfilm-module-build.log
-      - name: Archive source review diff and logs ONLY
+      - name: Fingerprint experimental module (review build only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=upstream-2025/modules/raw_video/mlv_lite/build/mlv_lite.mo
+          test -s "$FILE"
+          arm-none-eabi-readelf -h "$FILE" | grep -E 'Machine:.*ARM'
+          mkdir -p qvfilm-experimental-review
+          cp "$FILE" qvfilm-experimental-review/MLV_LITE.MO
+          sha256sum qvfilm-experimental-review/MLV_LITE.MO > qvfilm-experimental-review/SHA256SUMS.txt
+          cat > qvfilm-experimental-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
+          QVFilm Cinema HUD v0.5.0 - 5D3.123 / ML 2025-06-20
+          Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          EXPERIMENTAL PATCH: NOT VERIFIED ON A CAMERA.
+          Lossless RAW recording is deliberately blocked for 5D3.123 to avoid
+          the previously observed mlv_lite lossless ASSERT. This is not a
+          working 14-bit lossless compression fix.
+          UI uses optional Movie -> QVFIL Cinema HUD and the native LVInfo bars.
+          Use a separate, fully-backed-up camera test card only after verifying
+          source, checksums and recovery instructions. NEVER flash Canon firmware.
+          Do not overwrite your known-good original Magic Lantern SD card.
+          TXT
+      - name: Publish EXPERIMENTAL module only after successful build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.5.0_EXPERIMENTAL_MODULE_5D3_123_UNTESTED
+          path: qvfilm-experimental-review/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Archive source diff and compile logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
