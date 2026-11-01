@@ -79,3 +79,4 @@ jobs:
         shell: pwsh
         run: |
           python qvfilm/preflight/test_windows_batch.py
+          python qvfilm/preflight/test_baseline_windows_cmd.py
