@@ -38,7 +38,7 @@ jobs:
         run: |
           set -o pipefail
           make -C platform/5D3.123 all PYTHON=python3 2>&1 | tee qvfilm-logs/qvfil-core.log
-          make -C modules/mlv_lite all PYTHON=python3 2>&1 | tee qvfilm-logs/qvfil-mlv-lite.log
+          # Legacy module dependency checker uses Python 2 print syntax.\n          # Convert it in the CI checkout only, leaving repository sources unchanged.\n          python3 -m lib2to3 -w -n modules/checkdep.py 2>&1 | tee qvfilm-logs/checkdep-python3.log\n          make -C modules/mlv_lite all PYTHON=python3 2>&1 | tee qvfilm-logs/qvfil-mlv-lite.log
       - name: Validate original Movie menu and QVFIL registration
         shell: bash
         run: |
