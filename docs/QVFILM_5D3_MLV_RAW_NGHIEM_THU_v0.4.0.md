@@ -1,4 +1,4 @@
-# QVFilm — Magic Lantern 5D3 v0.4.0: Nghiệm thu quay MLV RAW lần đầu
+# QVFilm — Magic Lantern 5D3 v0.4.1: Nghiệm thu quay MLV RAW lần đầu
 
 ## Trạng thái
 
@@ -6,14 +6,24 @@ Canon 5D Mark III + Magic Lantern \`2025-06-20.5D3.123\`: cài và khởi độn
 
 **Giữ nguyên thẻ SD Magic Lantern đang hoạt động. Không cài module QVFIL tùy biến lên đó.**
 
+## Cập nhật từ ảnh tab Movie trên Canon (01/11/2026)
+
+- Xác nhận RAW Video: ON, 1920x1080, 1.00x. Điều này chứng minh mlv_lite.mo đã nạp và tạo mục menu, **không chứng minh máy đã ghi MLV RAW thành công**.
+- FPS Override: OFF; thông số trong ảnh là 25.000p (không mặc định kết luận đang ở 24p).
+- Dòng mô tả "Record RAW video (MLV format, no sound, basic metadata)" cho biết thử nghiệm đầu chưa có âm thanh MLV.
+- Thông tin MB/s/MB trong dòng trợ giúp là chỉ số dự tính do ML hiển thị, **chưa phải kết quả đo tốc độ ghi thẻ liên tục**.
+- **Bước tiếp theo:** khi RAW Video đang được chọn, nhấn Q để mở submenu. Chụp lại toàn bộ Resolution, Aspect ratio, bit depth/Output format, card destination và Frame skipping nếu có. Không đoán các tùy chọn chưa thấy.
+- Nếu thực hiện test ngắn khi đã xác minh thẻ ghi, ưu tiên độ phân giải nhỏ hơn 1920x1080 (ví dụ 960x540 hoặc 1280x720 tùy tốc độ thẻ). Giữ 25p với FPS Override OFF và để Frame skipping OFF nếu có, nhằm phát hiện rơi khung hình thay vì âm thầm bỏ qua.
+- **Không dùng bản QVFIL tùy biến hoặc thêm mlv_rec.mo từ build khác.**
+
 ## A. Xác nhận module RAW của bản nền
 
 1. Pin đầy, máy ở Movie/LiveView, nhấn nút **ERASE** để mở Magic Lantern.
 2. Chuyển đến tab **Modules** (biểu tượng nhiều ô vuông).
-3. Chụp ảnh rõ toàn bộ danh sách. Nếu có \`mlv_rec\`, chỉ bật \`mlv_rec\` (không bật đồng thời nhiều module ghi RAW như \`raw_rec\` / \`mlv_lite\`).
-4. Nếu chỉ thấy các tên module khác, chưa tự bật — gửi ảnh để xác định trước.
-5. Sau khi bật đúng \`mlv_rec\`, thoát menu và khởi động lại máy bình thường.
-6. Mở Magic Lantern → tab **Movie**; xác nhận mục **RAW video (MLV)** xuất hiện. Chụp ảnh trang Movie và submenu RAW (thường dùng **Q** để mở submenu).
+3. Anh đã kiểm tra: bản Magic Lantern 2025-06-20.5D3.123 có ba module: `mlv_lite.mo`, `mlv_play.mo`, `mlv_snd.mo`. **Không thiếu `mlv_rec.mo`**: `mlv_lite.mo` là bộ ghi MLV RAW của bản này.
+4. Bật **chỉ `mlv_lite.mo`**, giữ `mlv_play.mo` và `mlv_snd.mo` ở OFF trong thử nghiệm quay không âm thanh đầu tiên. **Không** chép `mlv_rec.mo`/`raw_rec.mo` từ bản ML khác.
+5. Thoát menu và tắt/bật máy bình thường; xác nhận `mlv_lite.mo` đã được nạp thành công và không có thông báo lỗi.
+6. Mở tab **Movie**; tìm `RAW video (MLV)` hoặc `RAW video`. Chụp ảnh mục và submenu RAW bằng phím `Q`. Nếu thiếu menu, dừng và báo lại trạng thái module.
 
 ## B. Thử một clip ngắn
 
