@@ -3,8 +3,8 @@ name: QVFilm read-only preflight and recovery QA
 on:
   push:
     branches:
-      - qvfilm/v0.2.2-preflight-recovery
-      - qvfilm/v0.2.2-win10-hotfix
+      - qvfilm/v0.2.0-preflight-recovery
+      - qvfilm/v0.2.1-win10-hotfix
       - qvfilm/v0.2.2-compatibility-audit
   workflow_dispatch:
 
