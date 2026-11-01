@@ -30,8 +30,8 @@ Những tác vụ này chỉ đọc thẻ rồi ghi file trên PC. Không tạo 
 Lệnh nâng cao (không bắt buộc):
 
 ```powershell
-py -3 preflight.py scan --photo "C:\Photos\IMG_0001.CR2" --card "E:\" --out "reports"
-py -3 preflight.py backup --card "E:\" --dest "C:\QVFilm\5D3\known_good_20261101"
+py -3 preflight.py scan --photo "C:\Photos\IMG_0001.CR2" --card "E:\." --out "reports"
+py -3 preflight.py backup --card "E:\." --dest "C:\QVFilm\5D3\known_good_20261101"
 py -3 preflight.py verify-backup --dir "C:\QVFilm\5D3\known_good_20261101"
 ```
 
