@@ -49,6 +49,60 @@ def patch(source):
         '    //~ console_show();'
     )
 
+    # Draw only in Canon's *idle* LiveView status path, at 1s cadence.
+    # Keeps the original Canon/Magic Lantern shutter/AF/record handlers.
+    overlay = r"""
+/* QVFIL Cinema Overlay: opt-in, non-invasive bitmap HUD (not RAW pixels).
+ * Do not draw in menus or Canon GUI states; half-shutter/AF can switch preview.
+ * The existing ShootTask status refresh is ~1 Hz, never every VSYNC.
+ */
+static void qvfilm_draw_cinema_overlay(void)
+{
+    if (qvfilm_hud_enabled != 2 || !is_camera("5D3", "*") ||
+        !raw_video_enabled || !lv || !is_movie_mode() ||
+        !get_global_draw() || gui_menu_shown() || !liveview_display_idle())
+        return;
+
+    const char *state =
+        RAW_IS_RECORDING ? "REC" :
+        RAW_IS_PREPARING ? "ARMING" :
+        RAW_IS_FINISHING ? "ENDING" : "STBY";
+    int fps = fps_get_current_x1000();
+    bmp_fill(COLOR_BG_DARK, 32, 35, 656, 30);
+    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
+               44, 40, "QVFIL CINEMA");
+    bmp_printf(FONT(FONT_MED,
+                    RAW_IS_RECORDING ? COLOR_RED : COLOR_WHITE,
+                    COLOR_BG_DARK), 280, 40, "%s", state);
+    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
+               475, 40, "%d.%02d FPS", fps / 1000, (fps % 1000) / 10);
+
+    bmp_fill(COLOR_BG_DARK, 32, 397, 656, 30);
+    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
+               44, 403, "%dx%d  %db %s    ISO %d",
+               res_x, res_y, BPP,
+               OUTPUT_COMPRESSION ? "LJ" : "RAW",
+               lens_info.iso);
+}
+"""
+    source = replace_once(
+        source,
+        "/* Display the 'Recording...' icon and status */\n"
+        'static REQUIRES(ShootTask)\n'
+        'void show_recording_status()',
+        overlay + "\n/* Display the 'Recording...' icon and status */\n"
+        'static REQUIRES(ShootTask)\n'
+        'void show_recording_status()'
+    )
+    source = replace_once(
+        source,
+        '    /* Determine if we should redraw */\n'
+        '    if (!RAW_IS_IDLE && liveview_display_idle())',
+        '    qvfilm_draw_cinema_overlay();\n'
+        '    /* Determine if we should redraw */\n'
+        '    if (!RAW_IS_IDLE && liveview_display_idle())'
+    )
+
     # Explain the guard in the Data format submenu before REC is pressed.
     source = replace_once(
         source,
@@ -70,7 +124,7 @@ def patch(source):
 static LVINFO_UPDATE_FUNC(qvfilm_top_info)
 {
     LVINFO_BUFFER(48);
-    if (!qvfilm_hud_enabled || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
+    if (qvfilm_hud_enabled != 1 || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
     int fps = fps_get_current_x1000();
     snprintf(buffer, sizeof(buffer), "QVFIL %s %d.%02d",
              RAW_IS_RECORDING ? "REC" : "STBY",
@@ -82,11 +136,11 @@ static LVINFO_UPDATE_FUNC(qvfilm_top_info)
 static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
 {
     LVINFO_BUFFER(64);
-    if (!qvfilm_hud_enabled || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
+    if (qvfilm_hud_enabled != 1 || !is_camera("5D3", "*") || !lv || !is_movie_mode()) return;
     /* The resolution and bit depth come from the actual MLV recorder state,
      * never fake 3K or advertise lossless as operational. */
     snprintf(buffer, sizeof(buffer), "%dx%d  %db %s  ISO%u",
-             res_x, res_y, BPP_D,
+             res_x, res_y, BPP,
              OUTPUT_COMPRESSION ? "LJ" : "RAW",
              lens_info.iso);
     item->color_fg = COLOR_WHITE;
@@ -95,7 +149,7 @@ static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
 
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.1");
+    MENU_SET_RINFO("QVFIL v0.5.2");
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
@@ -103,9 +157,10 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .name = "QVFIL Cinema HUD",
         .priv = &qvfilm_hud_enabled,
         .update = qvfilm_hud_menu_update,
-        .max = 1,
-        .help = "Cinema camera-style status strips in Movie LiveView.",
-        .help2 = "Build v0.5.1. Requires Movie LiveView / Global Draw.",
+        .max = 2,
+        .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
+        .help = "Cinema LiveView info. START/STOP records RAW in movie mode.",
+        .help2 = "v0.5.2: Overlay needs Global Draw and idle LiveView; Shutter may switch preview.",
     },
 };
 """
@@ -172,7 +227,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.1 source patch applied: 5D3 lossless fail-closed guard + visible opt-in LVInfo HUD")
+    print("QVFIL v0.5.2 patch: lossless guard + accurate RAW bit depth + optional Cinema Overlay")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
