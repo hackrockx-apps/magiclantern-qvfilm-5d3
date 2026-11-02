@@ -339,10 +339,14 @@ static void qvfilm_lossless_diag_mark_failure(int code, int frame, int slot, int
     # Mark the compression queue as started only after INT_MAX is posted.
     source = replace_once(
         source,
-        '    msg_queue_post(compress_mq, INT_MAX);',
+        '    msg_queue_post(compress_mq, INT_MAX);\n'
+        '    \n'
+        '    /* fake recording status, to integrate with other ml stuff (e.g. hdr video */',
         '    msg_queue_post(compress_mq, INT_MAX);\n'
         '    if (qvfilm_lossless_diag_active)\n'
-        '        qvfilm_lossless_diag_queue_started = 1;'
+        '        qvfilm_lossless_diag_queue_started = 1;\n'
+        '    \n'
+        '    /* fake recording status, to integrate with other ml stuff (e.g. hdr video */'
     )
 
     # Wait for the compressor task's FIFO drain acknowledgement before
