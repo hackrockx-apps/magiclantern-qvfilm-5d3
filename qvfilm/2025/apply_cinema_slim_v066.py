@@ -22,8 +22,7 @@ def patch(source):
     # 4:Cinema clean. New 5:Cinema slim is opt-in, OFF by default.
     source = replace_once(
         source,
-        '''if (qvfilm_hud_enabled != 2 && qvfilm_hud_enabled != 3 &&
-        qvfilm_hud_enabled != 4) { qvfilm_hud_gate_code = 1; return; }''',
+        '''if (qvfilm_hud_enabled != 2 && qvfilm_hud_enabled != 3 && qvfilm_hud_enabled != 4) { qvfilm_hud_gate_code = 1; return; }''',
         '''if (qvfilm_hud_enabled != 2 && qvfilm_hud_enabled != 3 &&
         qvfilm_hud_enabled != 4 && qvfilm_hud_enabled != 5)
     { qvfilm_hud_gate_code = 1; return; }'''
