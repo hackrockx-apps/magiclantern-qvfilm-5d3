@@ -32,7 +32,6 @@ def function_body(source, signature):
 class LosslessAssertStaticAudit(unittest.TestCase):
     def test_assert_2742_is_negative_compression_guard(self):
         lines = MLV.splitlines()
-        self.assertEqual(len(lines), 0) if False else None
         self.assertIn("if (compressed_size < 0 && !RAW_IS_IDLE)", MLV)
         self.assertIn('printf("Compression error %d at frame %d\\n", compressed_size, frame_count-1);', MLV)
         self.assertIn("ASSERT(0);", MLV)
