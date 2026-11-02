@@ -52,15 +52,10 @@ def patch(source):
     # Draw only in Canon's *idle* LiveView status path, at 1s cadence.
     # Keeps the original Canon/Magic Lantern shutter/AF/record handlers.
     overlay = r"""
-/* QVFIL Cinema Overlay: opt-in, non-invasive bitmap HUD (not RAW pixels).
- * Do not draw in menus or Canon GUI states; half-shutter/AF can switch preview.
- * Drawn during ShootTask polling after Canon's shooting status UI updates,
- * bounded to <=4 Hz, never during VSYNC or RAW/EDMAC capture.
- */
-/* Observable run-time gate; counters visible in Movie > QVFIL HUD Diagnostics.
- * 0=drawn, 1=disabled, 2=not Movie LiveView/RAW, 3=GD setting OFF,
- * 4=bitmap palette disabled, 6=Canon UI not idle.
- * No card writes, no log dumps, no polling in the frame capture path.
+/* QVFIL Low-Flicker Cinema HUD for 5D3.123 (Magic Lantern 2025).
+ * No continuous bitmap painting while RAW is recording. We update on
+ * actual state changes, not at 4Hz and not in VSYNC or EDMAC capture.
+ * Gate 7: intentional REC freeze (normal), not an error.
  */
 static volatile unsigned int qvfilm_hud_draws = 0;
 static volatile int qvfilm_hud_gate_code = 1;
@@ -72,42 +67,72 @@ static void qvfilm_draw_cinema_overlay(void)
     { qvfilm_hud_gate_code = 2; return; }
     if (!get_global_draw_setting()) { qvfilm_hud_gate_code = 3; return; }
     if (!bmp_is_on()) { qvfilm_hud_gate_code = 4; return; }
-    /* Preserve the most recent LiveView gate when the operator reopens Movie. */
-    if (gui_menu_shown()) return;
+    if (gui_menu_shown()) return; /* preserve last LV diagnostics */
     if (!liveview_display_idle()) { qvfilm_hud_gate_code = 6; return; }
-    qvfilm_hud_gate_code = 0;
 
-    /* Canon may use a standard LV display mode where get_global_draw() is
-     * false despite Global Draw setting being ON. Since this mode is explicitly
-     * user selected, use the setting and guard actual bitmap/display state.
-     * Never re-enable LCD or change Canon UI display modes ourselves. */
-    static int last_overlay_draw = INT_MIN;
-    if (!should_run_polling_action(250, &last_overlay_draw)) return;
+    static int last_mode = -1;
+    static int last_fps = -1;
+    static int last_iso = -1;
+    static int last_x = -1;
+    static int last_y = -1;
+    static int last_bits = -1;
+    static int last_refresh = INT_MIN;
+
+    int mode = RAW_IS_RECORDING ? 1 :
+               RAW_IS_PREPARING ? 2 :
+               RAW_IS_FINISHING ? 3 : 0;
+    int fps = (fps_get_current_x1000() + 500) / 1000; /* whole FPS */
+    int iso = lens_info.iso;
+    int bits = BPP;
+
+    if (mode == 1 && last_mode == 1)
+    {
+        /* Never write QVFIL bitmap repeatedly during sustained RAW REC. */
+        qvfilm_hud_gate_code = 7;
+        return;
+    }
+
+    int changed = mode != last_mode || fps != last_fps || iso != last_iso ||
+                  res_x != last_x || res_y != last_y || bits != last_bits;
+    int refresh_idle = 0;
+    if (mode == 0 && !changed)
+        refresh_idle = should_run_polling_action(5000, &last_refresh);
+    if (!changed && !refresh_idle)
+    {
+        qvfilm_hud_gate_code = 0;
+        return;
+    }
 
     const char *state =
-        RAW_IS_RECORDING ? "REC" :
-        RAW_IS_PREPARING ? "ARMING" :
-        RAW_IS_FINISHING ? "ENDING" : "STBY";
-    int fps = fps_get_current_x1000();
-    BMP_LOCK(
-        bmp_fill(COLOR_ALMOST_BLACK, 24, 24, 672, 30);
-        bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
-                   36, 29, "QVFIL CINEMA v0.5.4");
-        bmp_printf(FONT(FONT_MED,
-                        RAW_IS_RECORDING ? COLOR_RED : COLOR_WHITE,
-                        COLOR_ALMOST_BLACK), 328, 29, "%s", state);
-        bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
-                   504, 29, "%d.%02d FPS", fps / 1000, (fps % 1000) / 10);
+        mode == 1 ? "REC" :
+        mode == 2 ? "ARM" :
+        mode == 3 ? "END" : "STBY";
 
-        bmp_fill(COLOR_ALMOST_BLACK, 24, 422, 672, 30);
+    /* Compact overlays in image margins (720x480 bitmap coordinates).
+     * Avoid Canon's upper/lower status bars and draw small rectangles only.
+     */
+    BMP_LOCK(
+        bmp_fill(COLOR_ALMOST_BLACK, 40, 85, 475, 26);
+        bmp_printf(FONT(FONT_MED,
+                        mode == 1 ? COLOR_RED : COLOR_WHITE,
+                        COLOR_ALMOST_BLACK),
+                   50, 89, "QVFIL %s   %d FPS", state, fps);
+
+        bmp_fill(COLOR_ALMOST_BLACK, 40, 382, 570, 26);
         bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
-                   36, 427, "%dx%d  %db %s  ISO %d",
-                   res_x, res_y, BPP,
-                   OUTPUT_COMPRESSION ? "LJ" : "RAW",
-                   lens_info.iso);
+                   50, 386, "%dx%d  %db RAW   ISO %d",
+                   res_x, res_y, bits, iso);
     )
     qvfilm_hud_draws++;
+    qvfilm_hud_gate_code = 0;
+    last_mode = mode;
+    last_fps = fps;
+    last_iso = iso;
+    last_x = res_x;
+    last_y = res_y;
+    last_bits = bits;
 }
+
 """
     source = replace_once(
         source,
@@ -209,7 +234,7 @@ static MENU_UPDATE_FUNC(qvfilm_enter_cinema_update)
 
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.4");
+    MENU_SET_RINFO("QVFIL v0.5.5");
     if (qvfilm_hud_enabled == 2 && !get_global_draw_setting())
         MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Enable Global Draw to use Cinema Overlay.");
 }
@@ -218,7 +243,7 @@ static MENU_UPDATE_FUNC(qvfilm_hud_diagnostics_update)
 {
     MENU_SET_VALUE("Draws:%u", qvfilm_hud_draws);
     MENU_SET_RINFO("Gate:%d", qvfilm_hud_gate_code);
-    MENU_SET_HELP("After closing menu: 0 drawn, 1 OFF, 2 not LV/RAW, 3 GD OFF, 4 LCD OFF, 6 UI busy.");
+    MENU_SET_HELP("Gate 7 is normal: QVFIL bitmap painting pauses during RAW REC.");
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
@@ -237,13 +262,13 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .max = 2,
         .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
         .help = "Select HUD style, then use QVFIL Enter Cinema to close ML menu.",
-        .help2 = "v0.5.4: Compatible with Canon LiveView UI; rear START/STOP records.",
+        .help2 = "v0.5.5: Low-flicker. No repeated bitmap painting during RAW REC.",
     },
     {
         .name = "QVFIL HUD Diagnostics",
         .update = qvfilm_hud_diagnostics_update,
         .help = "Read Draws and Gate after entering Cinema and returning to Movie.",
-        .help2 = "After LiveView, Gate 0=drawn, 1=OFF, 2=not LV/RAW, 3=GD, 4=LCD, 6=busy.",
+        .help2 = "0=ready, 1=OFF, 2=LV/RAW, 3=GD, 4=BMP, 6=UI busy, 7=REC pause.",
     },
 };
 """
@@ -310,7 +335,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.4 patch: shoot-task OLED-style LCD overlay + Canon LV compatibility")
+    print("QVFIL v0.5.5 patch: low-flicker HUD with zero sustained RAW REC bitmap writes")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
