@@ -1,6 +1,8 @@
 # QVFIL v0.6.6 – Cinema Slim HUD (Canon EOS 5D Mark III / firmware 1.2.3)
 
-## Kết quả nghiệm thu trước đó (02/11/2026)
+## Kết quả nghiệm thu (02/11/2026)
+- **QVFIL v0.6.6 Cinema Slim: USER HARDWARE PASS** — người dùng đã hoàn tất nghiệm thu trên Canon EOS 5D Mark III và xác nhận PASS.
+- Chưa ghi nhận chi tiết thời lượng/độ phân giải/bit-depth của bài test v0.6.6 trong xác nhận này; không tự suy diễn rằng đã thực hiện bài stress test dài hoặc kiểm tra độc lập từng frame.
 - QVFIL v0.6.5 menu `Movie > QVFIL Cinema HUD > Cinema clean` hoạt động, bốn thông số hình ảnh: 105mm / f4.0 / 1/33 / ISO3200 ở hai hàng và histogram bên phải không bị che.
 - Người vận hành xác nhận **Focus Peak hoạt động** và quay RAW **10 giây** ở cấu hình thực tế ổn định. Chưa có file MLV gửi để phân tích toàn vẹn khung hình độc lập; không tuyên bố zero drops dựa trên ảnh LCD.
 - Thanh thông số Canon/ML dưới cùng còn hiển thị song song với HUD; panel 2x2 v0.6.5 (490x70 pixels) và panel phụ phía trên (330x26) chiếm nhiều diện tích màn hình.
@@ -18,7 +20,19 @@
 - **raw_video_rec_task** không thay đổi so với v0.6.5; không đổi sensor, buffer, writer, cấu hình lossless, SD/CF clock, bootflag hay firmware. Chế độ 14-bit lossless từng gây ASSERT vẫn được chặn.
 - Pinned Magic Lantern source: `ed3e7c0dfacfdeaf3349dee73edf9e3621217462`.
 
-## Nghiệm thu bản thử nghiệm (chỉ khi CI / ARM compile PASS)
+## Trạng thái nghiệm thu
+- `V066_EXACT_SOURCE_TEST_PASS`
+- `V066_ARM_BUILD_PASS`
+- `V066_USER_HARDWARE_PASS` — confirmation received after the test checklist.
+- `V066_CAMERA_TEST_DETAILS_NOT_RECORDED` — ask for exact mode/duration only if needed for future stress-test matrix.
+- `V066_RAW_RECORDER_UNCHANGED_BY_SOURCE_TEST`
+- `LOSSLESS14_BLOCKED`
+
+## Bảo toàn hệ thống
+- Giữ thẻ và cấu hình v0.6.6 đã PASS nguyên trạng làm mốc làm việc hiện tại; không thử lossless14/3K hoặc thay bootflag/firmware/clock.
+- Trước khi chuẩn bị bất kỳ module cài mới nào, hoàn tất xác minh độc lập firmware công khai Canon, audit đọc-thẻ và backup/recovery review theo readiness gate hiện hành.
+
+## Checklist nghiệm thu ban đầu (tham chiếu, không yêu cầu chạy lại)
 1. Không chép đè lên thẻ khởi động v0.6.5 đang hoạt động; sao lưu thẻ CF, SD, ROM gốc. Dùng thẻ SD boot **TEST riêng** và CF test.
 2. Tải artifact có tên **QVFIL_v0.6.6_EXPERIMENTAL_MODULE_5D3_123_UNTESTED** trong GitHub Actions mới nhất của nhánh v0.6.6. Giải nén, kiểm tra `SHA256SUMS.txt` đối với module, sau đó chỉ sao chép `MLV_LITE.MO` vào `ML/MODULES/` của thẻ boot TEST. Không flash Canon firmware, không sửa bootflag, không overclock.
 3. Trong `Modules`, xác nhận `mlv_lite.mo` ON; trong tab Movie xác nhận v0.6.6 và đầy đủ `RAW video`, `Shoot Check`, `Media Engine`, `Recording Report`.
@@ -27,10 +41,11 @@
 6. Test RAW ngắn **1280x720, 25p, 10-bit uncompressed** trên CF test: quay 5–10s, STOP thủ công, mở .MLV trong MLV App. Kiểm tra không tự ngắt, không chớp hình. Chỉ sau khi PASS mới thử các độ phân giải, bit depth và thời lượng **đã hoạt động ổn ở v0.6.5**.
 7. Nếu treo máy, lỗi ký tự, menu mất hoặc .MLV không thể mở: tắt và quay lại thẻ v0.6.5 nguyên trạng. Không thử lossless/3K cho đợt này.
 
-## Trạng thái
-V065_CINEMA_CLEAN_10S_RAW_USER_PASS
+## Trạng thái hiện hành
+V065_CINEMA_CLEAN_USER_PASS
 V065_FOCUS_PEAK_USER_PASS
-V066_CI_AND_ARM_PENDING_WHEN_DOC_WRITTEN
-V066_HARDWARE_PENDING
+V066_CINEMA_SLIM_USER_HARDWARE_PASS
+V066_EXACT_SOURCE_TEST_PASS
+V066_ARM_BUILD_PASS
 V066_RAW_RECORDER_UNCHANGED_BY_SOURCE_TEST
 LOSSLESS14_BLOCKED
