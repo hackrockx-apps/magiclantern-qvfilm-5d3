@@ -97,3 +97,14 @@ A prior compatibility audit recorded that the Canon public firmware version was 
 - \`V067_SOURCE_DIAGNOSIS_ONLY\`
 - \`V067_NO_CAMERA_MODULE_BUILT\`
 - \`LOSSLESS14_BLOCKED\`
+
+
+## Cập nhật hồ sơ tương thích sau xác nhận của người vận hành — 02/11/2026
+
+- Người vận hành xác nhận firmware Canon công khai của thân máy là **1.2.3**, khớp mục tiêu Magic Lantern \`5D3.123\`.
+- QVFIL v0.6.6 đã được nghiệm thu phần cứng PASS, xác nhận hệ thống Magic Lantern hiện tại boot và chạy được trên máy.
+- ROM*.BIN backup đã được báo cáo PASS trong checkpoint trước đó. Tuy nhiên, đây không phải image đầy đủ của thẻ boot.
+- Thẻ đang chạy v0.6.6 phải được giữ nguyên. Chưa có bằng chứng trong hồ sơ về bản sao toàn thẻ có thể phục hồi đã xác minh checksum hoặc thẻ dự phòng độc lập boot PASS.
+- Vì vậy, firmware verification blocker đã được gỡ; **recovery-media blocker vẫn còn**. PR này vẫn chỉ source diagnosis; chưa có module mới để cài.
+- Không cập nhật Canon firmware lên 1.3.3 hoặc mới hơn: Canon thông báo các phiên bản đó không thể downgrade về 1.2.3. https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
+
