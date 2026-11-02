@@ -1,9 +1,9 @@
-name: QVFIL v0.6.3 — exact 2025 source compile (NOT INSTALLABLE)
+name: QVFIL v0.6.4 — exact 2025 source compile (EXPERIMENTAL)
 
 on:
   push:
     branches:
-      - qvfilm/v0.6.3-cinema-focus-display
+      - qvfilm/v0.6.4-safe-preflight
   workflow_dispatch:
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 qvfilm/2025/apply_cinema_focus_v063.py --checkout upstream-2025
+          python3 qvfilm/2025/apply_safe_preflight_v064.py --checkout upstream-2025
           git -C upstream-2025 diff --check
           test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
           git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
@@ -73,13 +73,14 @@ jobs:
           cp "$FILE" qvfilm-experimental-review/MLV_LITE.MO
           sha256sum qvfilm-experimental-review/MLV_LITE.MO > qvfilm-experimental-review/SHA256SUMS.txt
           cat > qvfilm-experimental-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
-          QVFilm Cinema HUD v0.6.3 - 5D3.123 / ML 2025-06-20
+          QVFilm Cinema HUD v0.6.4 - 5D3.123 / ML 2025-06-20
           Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
           EXPERIMENTAL PATCH: NOT VERIFIED ON A CAMERA.
           Lossless RAW recording is deliberately blocked for 5D3.123 to avoid
           the previously observed mlv_lite lossless ASSERT. This is not a
           working 14-bit lossless compression fix.
-          Opt-in large exposure HUD; native Focus Peak; RAW writer unchanged.\n          No synthetic card benchmark, no overclock, no buffer safety bypass.
+          Read-only 1080p preflight and HUD instructions; RAW writer unchanged.
+          Native Focus Peak only; no card benchmark, no overclock, no safety bypass.
           Use a separate, fully-backed-up camera test card only after verifying
           source, checksums and recovery instructions. NEVER flash Canon firmware.
           Do not overwrite your known-good original Magic Lantern SD card.
@@ -88,7 +89,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: QVFIL_v0.6.3_EXPERIMENTAL_MODULE_5D3_123_UNTESTED
+          name: QVFIL_v0.6.4_EXPERIMENTAL_MODULE_5D3_123_UNTESTED
           path: qvfilm-experimental-review/
           if-no-files-found: error
           retention-days: 14
@@ -96,7 +97,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: QVFIL_v0.6.3_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
+          name: QVFIL_v0.6.4_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
           path: |
             qvfilm-2025.diff
             qvfilm-core-build.log
