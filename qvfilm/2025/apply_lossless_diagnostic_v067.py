@@ -99,10 +99,11 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
     }
 }
 """
-    guard_marker_start = 'static REQUIRES(RawRecTask) EXCLUDES(settings_sem)\\nvoid raw_video_rec_task()\\n{'
+    guard_marker_start = 'static REQUIRES(RawRecTask) EXCLUDES(settings_sem)\nvoid raw_video_rec_task()\n{'
     guard_start = source.find(guard_marker_start)
     guard_marker = '    //~ console_show();'
     if guard_start < 0 or source.count(guard_marker_start) != 1:
+        raise ValueError("Expected exactly one upstream RawRecTask entry")
     guard_end = source.find(guard_marker, guard_start)
     if guard_end < 0:
         raise ValueError("raw_video_rec_task console_show anchor missing")
@@ -112,6 +113,7 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
     replacement = preflight + r'''
 static REQUIRES(RawRecTask) EXCLUDES(settings_sem)
 void raw_video_rec_task()
+{
     /* A timed-out compressor may still own the buffers. Never start another
      * RAW session until a camera reboot clears this session-only latch.
      */
@@ -537,7 +539,7 @@ static MENU_SELECT_FUNC(qvfilm_lossless_diag_select)
     {
         qvfilm_lossless_diag_status = QVFIL_LD_BLOCKED;
         qvfilm_lossless_diag_block_reason = reason;
-        NotifyBox(6000, qvfilm_lossless_diag_reason_text(reason));
+        NotifyBox(6000, "%s", qvfilm_lossless_diag_reason_text(reason));
         return;
     }
 
