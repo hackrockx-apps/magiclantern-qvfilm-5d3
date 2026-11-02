@@ -49,3 +49,10 @@ V066_EXACT_SOURCE_TEST_PASS
 V066_ARM_BUILD_PASS
 V066_RAW_RECORDER_UNCHANGED_BY_SOURCE_TEST
 LOSSLESS14_BLOCKED
+
+
+## Xác nhận firmware và trạng thái bảo toàn — 02/11/2026
+- Người vận hành xác nhận firmware Canon công khai **1.2.3**, đúng nền tảng Magic Lantern `5D3.123`.
+- Không cập nhật lên Canon 1.3.3 hoặc mới hơn: Canon xác nhận không thể downgrade các bản đó về 1.2.3. https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
+- v0.6.6 là cấu hình đang PASS; giữ nguyên thẻ hiện tại. ROM*.BIN backup đã được báo cáo PASS, nhưng chưa có hồ sơ xác minh bản sao toàn thẻ có thể phục hồi hoặc thẻ dự phòng boot PASS.
+- Vì vậy, tiếp tục phát triển source/test được; chưa cài module thử nghiệm mới cho đến khi xác minh recovery media. 14-bit Lossless vẫn BLOCKED.
