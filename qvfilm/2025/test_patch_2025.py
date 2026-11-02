@@ -52,7 +52,7 @@ class PatchSafetyTests(unittest.TestCase):
                     result.index("/* Display the 'Recording...' icon and status */")]
         self.assertIn('get_global_draw_setting()', fn)
         self.assertNotIn('!get_global_draw()', fn)
-        self.assertIn('!DISPLAY_IS_ON', fn)
+        self.assertNotIn('!DISPLAY_IS_ON', fn)
         self.assertIn('!bmp_is_on()', fn)
         self.assertIn('gui_menu_shown()', fn)
         self.assertIn('liveview_display_idle()', fn)
