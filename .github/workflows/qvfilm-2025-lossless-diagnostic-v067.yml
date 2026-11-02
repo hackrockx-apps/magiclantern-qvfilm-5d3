@@ -1,0 +1,146 @@
+name: QVFIL v0.6.7 — one-shot Lossless diagnostic review build (NOT HARDWARE CERTIFIED)
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.6.7-lossless-diagnostic-module
+  pull_request:
+    branches:
+      - qvfilm/v0.6.7-lossless-diagnostic
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic-module-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout QVFilm patch and tests
+        uses: actions/checkout@v4
+
+      - name: Install ARM toolchain and build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            make gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-dev libnewlib-arm-none-eabi \
+            gcc g++ libc6-dev mercurial python3 python3-docutils perl
+          arm-none-eabi-gcc --version
+
+      - name: Fetch exact pinned Magic Lantern source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/reticulatedpines/magiclantern_simplified.git upstream-2025
+          git -C upstream-2025 checkout --detach ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          test "$(git -C upstream-2025 rev-parse HEAD)" = "ed3e7c0dfacfdeaf3349dee73edf9e3621217462"
+
+      - name: Run v0.6.5, v0.6.6 and v0.6.7 regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+             qvfilm/2025/fixture-2025-mlv_lite.c
+          cd qvfilm/2025
+          python3 -m unittest \
+            test_cinema_clean_v065 \
+            test_cinema_slim_v066 \
+            test_lossless_diagnostic_v067 -v
+          cd ../..
+          rm qvfilm/2025/fixture-2025-mlv_lite.c
+
+      - name: Apply strict v0.6.7 diagnostic patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/2025/apply_lossless_diagnostic_v067.py --checkout upstream-2025
+          git -C upstream-2025 diff --check
+          test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
+          git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
+            > qvfilm-2025-v067-diagnostic.patch
+          git -C upstream-2025 diff --stat
+
+      - name: Build exact 5D3.123 platform
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/platform/5D3.123 PYTHON=python3 \
+            2>&1 | tee qvfilm-v067-core-build.log
+
+      - name: Build patched MLV Lite module
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/modules/raw_video/mlv_lite PYTHON=python3 \
+            2>&1 | tee qvfilm-v067-module-build.log
+
+      - name: Verify ARM module and package review-only artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=upstream-2025/modules/raw_video/mlv_lite/build/mlv_lite.mo
+          test -s "$FILE"
+          arm-none-eabi-readelf -h "$FILE" | grep -E 'Machine:.*ARM'
+          mkdir -p qvfilm-v067-review-only
+          cp "$FILE" qvfilm-v067-review-only/MLV_LITE_V067_DIAGNOSTIC.MO
+          sha256sum qvfilm-v067-review-only/MLV_LITE_V067_DIAGNOSTIC.MO \
+            > qvfilm-v067-review-only/SHA256SUMS.txt
+          cat > qvfilm-v067-review-only/README_NOT_HARDWARE_CERTIFIED.txt <<'TXT'
+          QVFIL v0.6.7 — 5D3.123 one-shot Lossless diagnostic review build
+          Magic Lantern source: 2025-06-20
+          Pinned commit: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+
+          STATUS: COMPILED FOR REVIEW ONLY. NOT HARDWARE CERTIFIED. DO NOT INSTALL YET.
+
+          Safety behavior:
+          - 14-bit Lossless remains BLOCKED by default.
+          - A deliberate menu action arms one one-shot probe only.
+          - Probe requires Canon firmware 1.2.3 / ML 5D3.123, CF A:, Movie LiveView,
+            no card spanning, pre-record, rec trigger or H.264 proxy, resolution
+            <=1280x720 and frame rate <=25fps.
+          - Probe stops after 25 successful compressed frames (about one second at 25fps).
+          - Negative compressor returns are captured as -1/-2/-3; invalid output
+            sizes are captured as -4/-5/-6.
+          - Failed slot is never marked SLOT_FULL or sent to the MLV writer.
+          - Pending frames after the failed slot are discarded after the compression
+            queue acknowledges drain. If drain is not acknowledged, buffers are
+            retained and further RAW recording is blocked until camera reboot.
+          - 10-bit uncompressed RAW path and v0.6.6 Cinema HUD modes are retained.
+
+          Important:
+          - This is a diagnostic containment probe, NOT a repair of Canon's encoder
+            or Magic Lantern Lossless compression.
+          - Any diagnostic MLV may be partial; do not use it as production footage.
+          - Do not test 3K, 14-bit native, 12-bit lossless, auto-lossless, overclocking,
+            bootflag changes or Canon firmware updates.
+          - Keep the original v0.6.6 known-good card untouched.
+          - Before any camera installation, independently verify the full-card backup
+            checksum and restore procedure. This artifact has not been tested on a camera.
+          TXT
+          ! find qvfilm-v067-review-only -type f \( -name '*.FIR' -o -name 'autoexec.bin' \) | grep .
+          test "$(find qvfilm-v067-review-only -type f | wc -l)" -eq 3
+
+      - name: Upload diagnostic module review artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.7_LOSSLESS_DIAGNOSTIC_REVIEW_ONLY_NOT_HARDWARE_CERTIFIED
+          path: qvfilm-v067-review-only/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Archive patch and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.7_SOURCE_DIFF_AND_BUILD_LOGS
+          path: |
+            qvfilm-2025-v067-diagnostic.patch
+            qvfilm-v067-core-build.log
+            qvfilm-v067-module-build.log
+          if-no-files-found: ignore
+          retention-days: 30
