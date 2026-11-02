@@ -72,7 +72,7 @@ static int qvfilm_lossless_diag_preflight(void)
     if (!lv || !is_movie_mode() || !RAW_IS_IDLE) return 2;
     if (!raw_video_enabled) return 3;
     if (output_format != OUTPUT_14BIT_LOSSLESS) return 4;
-    if (card_spanning || pre_record || rec_trigger || h264_proxy_menu) return 5;
+    if (pre_record || rec_trigger || h264_proxy_menu) return 5;
     const char *dir = get_cf_dcim_dir();
     if (!dir || dir[0] != 'A' || !is_dir("A:/")) return 6;
     if (res_x <= 0 || res_y <= 0 || res_x > 1280 || res_y > 720) return 7;
@@ -90,7 +90,7 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
         case 2: return "Enter Movie LiveView and stop any active recording.";
         case 3: return "Enable RAW video before arming the diagnostic.";
         case 4: return "Select exactly 14-bit Lossless as the data format.";
-        case 5: return "Disable card spanning, pre-record, rec trigger and H.264 proxy.";
+        case 5: return "Disable pre-record, rec trigger and H.264 proxy.";
         case 6: return "Select the CF card (A:) as the recording destination.";
         case 7: return "Set a resolution from 640x360 up to 1280x720.";
         case 8: return "Set the frame rate to 25fps or lower.";
@@ -99,10 +99,10 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
     }
 }
 """
-    guard_start = source.find('void raw_video_rec_task()\n{')
+    guard_marker_start = 'static REQUIRES(RawRecTask) EXCLUDES(settings_sem)\\nvoid raw_video_rec_task()\\n{'
+    guard_start = source.find(guard_marker_start)
     guard_marker = '    //~ console_show();'
-    if guard_start < 0 or source.count('void raw_video_rec_task()\n{') != 1:
-        raise ValueError("Expected exactly one upstream raw_video_rec_task entry")
+    if guard_start < 0 or source.count(guard_marker_start) != 1:
     guard_end = source.find(guard_marker, guard_start)
     if guard_end < 0:
         raise ValueError("raw_video_rec_task console_show anchor missing")
@@ -110,8 +110,8 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
     if "QVFIL: Lossless RAW blocked on 5D3.123" not in guard_prefix:
         raise ValueError("The v0.6.6 5D3 lossless containment guard was not found")
     replacement = preflight + r'''
+static REQUIRES(RawRecTask) EXCLUDES(settings_sem)
 void raw_video_rec_task()
-{
     /* A timed-out compressor may still own the buffers. Never start another
      * RAW session until a camera reboot clears this session-only latch.
      */
