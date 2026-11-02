@@ -36,3 +36,23 @@ Các nguồn:
 - https://github.com/exiftool/exiftool/issues/399
 - https://builds.magiclantern.fm/
 - https://www.usa.canon.com/support/p/eos-5d-mark-iii
+
+
+## Cập nhật trạng thái sau nghiệm thu v0.6.6 — 02/11/2026
+
+**Cập nhật này thay thế nhận định firmware chưa xác minh và chưa có thẻ ML boot thành công trong audit ngày 01/11/2026.**
+
+- **Firmware Canon công khai 1.2.3: người vận hành xác nhận ngày 02/11/2026.** Khớp mục tiêu Magic Lantern `5D3.123`.
+- Magic Lantern đã boot và chạy trên máy, được chứng minh qua nghiệm thu phần cứng QVFIL v0.6.6 PASS. Kết luận cũ về chưa có thẻ ML boot thành công là dữ liệu lịch sử.
+- **ROM*.BIN backup: PASS** theo checkpoint vận hành trước đó. Bản sao ROM không thay thế bản sao toàn bộ thẻ khởi động và không tự chứng minh quy trình phục hồi.
+- Giữ nguyên thẻ đang chạy v0.6.6 làm thẻ known-good. Chưa có hồ sơ xác nhận image/clone toàn thẻ đã kiểm tra checksum hoặc một thẻ dự phòng độc lập đã boot thử thành công.
+- Không cần first-install Magic Lantern lại. Vẫn HOLD với việc cài module thử nghiệm mới cho tới khi có bản sao toàn thẻ có thể phục hồi và quy trình recovery được rà soát. Nhánh v0.6.7 hiện chỉ phân tích mã nguồn, không tạo module cài máy.
+- **Không cập nhật Canon firmware lên 1.3.3 hoặc mới hơn**: Canon xác nhận từ 1.3.3 trở lên không thể quay lại 1.2.3. Nguồn: https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
+
+### Việc còn lại trước module thử nghiệm mới
+1. Ghi nhận nhãn, dung lượng và loại thẻ hiện đang chạy v0.6.6 (không cần công khai serial).
+2. Tạo bản sao đầy đủ có thể phục hồi của thẻ hoặc chuẩn bị thẻ dự phòng tương đương; kiểm tra checksum. Không ghi đè thẻ gốc.
+3. Xác nhận có thể quay lại cấu hình v0.6.6 từ bản sao; giữ nguyên thẻ gốc chưa chỉnh sửa.
+4. Sau đó mới review riêng diagnostic module và kế hoạch nghiệm thu fail-closed. Không thử lại 14-bit Lossless để lấy mã lỗi.
+
+**Trạng thái:** `CANON_FW_1_2_3_USER_CONFIRMED` / `ML_BOOT_V066_HARDWARE_PASS` / `ROM_BACKUP_PASS_REPORTED` / `FULL_CARD_RECOVERY_BACKUP_NOT_YET_VERIFIED` / `NEW_MODULE_INSTALL_HOLD`.

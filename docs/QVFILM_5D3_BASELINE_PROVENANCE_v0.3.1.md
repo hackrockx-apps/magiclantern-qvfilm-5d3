@@ -46,3 +46,16 @@ Important: EOS Utility reads the same physical camera and may use the same firmw
 - Only then evaluate the QVFIL overlay, followed by 3K RAW recording with dropped-frame and temperature monitoring.
 
 **Status: SOURCE HASH MATCH / CAMERA FW UNVERIFIED / DO NOT INSTALL.**
+
+
+## Superseding operator evidence — 2026-11-02
+
+The original v0.3.1 provenance report predates camera commissioning. Its firmware and no-working-card statements are historical and superseded by these later operator results:
+
+- The operator explicitly confirms public Canon firmware **1.2.3**. This matches the `5D3.123` baseline target.
+- QVFIL v0.6.6 subsequently passed user hardware acceptance, proving the installed Magic Lantern environment boots and runs the accepted QVFIL build on this camera.
+- A `ROM*.BIN` backup was reported PASS in the project checkpoint. This is not a full card image and does not establish a tested card recovery route.
+- Keep the current v0.6.6 card untouched. A verified full-card clone/image and independent recovery check remain undocumented; hold any new experimental camera-module installation until that is complete.
+- Do not upgrade Canon firmware to 1.3.3 or later. Canon states these versions cannot be downgraded to 1.2.3: https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
+
+Updated state: `SOURCE_HASH_MATCH` / `CANON_FW_1_2_3_USER_CONFIRMED` / `ML_BOOT_V066_HARDWARE_PASS` / `ROM_BACKUP_PASS_REPORTED` / `FULL_CARD_RECOVERY_BACKUP_NOT_YET_VERIFIED` / `NEW_MODULE_INSTALL_HOLD`.

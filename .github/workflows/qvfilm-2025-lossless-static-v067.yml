@@ -1,0 +1,51 @@
+name: QVFIL v0.6.7 — 5D3 lossless ASSERT static diagnosis (NO CAMERA BUILD)
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.6.7-lossless-diagnostic
+  pull_request:
+    branches:
+      - qvfilm/v0.6.6-cinema-slim
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lossless-static-audit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout QVFIL diagnostics only
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch exact pinned Magic Lantern source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/reticulatedpines/magiclantern_simplified.git upstream-2025
+          git -C upstream-2025 checkout --detach ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          test "$(git -C upstream-2025 rev-parse HEAD)" = "ed3e7c0dfacfdeaf3349dee73edf9e3621217462"
+      - name: Run offline source-level diagnosis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qvfilm/2025/test_lossless14_static_v067.py \
+            --mlv-lite upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+            --lossless upstream-2025/modules/silent/lossless.c \
+            --qvfilm-patch qvfilm/2025/apply_qvfilm_patch.py
+      - name: Run host-only fail-closed queue model tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qvfilm/2025/test_lossless14_fail_closed_model_v067.py
+      - name: Assert no camera module or firmware artifact is produced
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! find . -type f \( -name '*.mo' -o -name '*.FIR' -o -name 'autoexec.bin' \) | grep .
+          echo "Static source audit only: no camera install artifacts."

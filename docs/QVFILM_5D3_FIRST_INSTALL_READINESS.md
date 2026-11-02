@@ -42,3 +42,23 @@ The `QVFIL` read-only dashboard and module were cross-compiled on Linux GitHub A
 ## Privacy and safety
 
 Never upload original images, serial numbers, private memory-card contents or firmware dumps to a public issue. The public GitHub project should contain only code, documented synthetic tests and redacted results. No code may automatically set camera bootflags, overwrite original CF/SD cards, or silently upgrade/downgrade Canon firmware.
+
+
+## Status update after v0.6.6 hardware acceptance — 2026-11-02
+
+**This addendum supersedes the 2026-11-01 statements that public firmware was unverified and that no known-good Magic Lantern boot card existed.** Those findings remain historical only.
+
+- **Public Canon firmware 1.2.3: USER-CONFIRMED on 2026-11-02.** This matches the Magic Lantern target `5D3.123`.
+- **Magic Lantern boot is hardware-proven:** the operator completed QVFIL v0.6.6 camera acceptance and reported PASS. The old statement that no working ML card had been demonstrated is superseded.
+- **ROM*.BIN backup: PASS**, reported in the prior project checkpoint. A ROM backup is not a full boot-card image and does not prove a complete card recovery route.
+- Preserve the current v0.6.6 card unchanged as the operational known-good card. A verified full-card image/clone with checksum, or a separate spare card independently boot-tested, is not yet documented.
+- **No first-time Magic Lantern installation is required now.** The remaining hold applies to installing a *new experimental module*, not to the already-working v0.6.6 system. PR #31 is source diagnosis only and creates no camera module.
+- Do not update Canon firmware to 1.3.3 or later: Canon states those versions cannot be downgraded to 1.2.3. Canon notice: https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
+
+### Remaining gate before any new camera module
+1. Record the current v0.6.6 card's label, capacity and media type (no public serial number needed).
+2. Create a restorable full-card backup/image or prepare an equivalent spare card; verify its checksum. Never overwrite the original known-good card.
+3. Review the restore path so the camera can return to the accepted v0.6.6 state.
+4. Only then review a separate fail-closed diagnostic module and camera test plan. Do not repeat the 14-bit Lossless failure to collect a missing error code.
+
+**Current decision:** `CANON_FW_1_2_3_USER_CONFIRMED` / `ML_BOOT_V066_HARDWARE_PASS` / `ROM_BACKUP_PASS_REPORTED` / `FULL_CARD_RECOVERY_BACKUP_NOT_YET_VERIFIED` / `NEW_MODULE_INSTALL_HOLD`.
