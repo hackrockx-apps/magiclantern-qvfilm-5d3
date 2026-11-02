@@ -1,9 +1,9 @@
-name: QVFIL v0.6.5 — exact 2025 source compile (EXPERIMENTAL)
+name: QVFIL v0.6.6 — exact 2025 source compile (EXPERIMENTAL)
 
 on:
   push:
     branches:
-      - qvfilm/v0.6.5-cinema-clean-overlay
+      - qvfilm/v0.6.6-cinema-slim
   workflow_dispatch:
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 qvfilm/2025/apply_cinema_clean_v065.py --checkout upstream-2025
+          python3 qvfilm/2025/apply_cinema_slim_v066.py --checkout upstream-2025
           git -C upstream-2025 diff --check
           test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
           git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
@@ -73,13 +73,13 @@ jobs:
           cp "$FILE" qvfilm-experimental-review/MLV_LITE.MO
           sha256sum qvfilm-experimental-review/MLV_LITE.MO > qvfilm-experimental-review/SHA256SUMS.txt
           cat > qvfilm-experimental-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
-          QVFilm Cinema HUD v0.6.5 - 5D3.123 / ML 2025-06-20
+          QVFilm Cinema HUD v0.6.6 - 5D3.123 / ML 2025-06-20
           Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
           EXPERIMENTAL PATCH: NOT VERIFIED ON A CAMERA.
           Lossless RAW recording is deliberately blocked for 5D3.123 to avoid
           the previously observed mlv_lite lossless ASSERT. This is not a
           working 14-bit lossless compression fix.
-          Opt-in Cinema clean (2x2) and correct Overlay Focus Peak guidance.
+          Opt-in Cinema slim: low-area 1-row status without extra upper badge.
           RAW writer unchanged; native ML peaking only; no overclock or bypass.
           Use a separate, fully-backed-up camera test card only after verifying
           source, checksums and recovery instructions. NEVER flash Canon firmware.
@@ -89,7 +89,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: QVFIL_v0.6.5_EXPERIMENTAL_MODULE_5D3_123_UNTESTED
+          name: QVFIL_v0.6.6_EXPERIMENTAL_MODULE_5D3_123_UNTESTED
           path: qvfilm-experimental-review/
           if-no-files-found: error
           retention-days: 14
@@ -97,7 +97,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: QVFIL_v0.6.5_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
+          name: QVFIL_v0.6.6_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
           path: |
             qvfilm-2025.diff
             qvfilm-core-build.log
