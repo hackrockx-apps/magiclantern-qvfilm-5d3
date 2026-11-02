@@ -147,20 +147,58 @@ static LVINFO_UPDATE_FUNC(qvfilm_bottom_info)
     item->color_bg = COLOR_BG_DARK;
 }
 
+/* Explicit one-tap exit from the Magic Lantern menu. When ML is still
+ * in transparent-menu mode (a menu item, e.g. Gradual Exposure, remains
+ * visible above the live image), START/STOP may be consumed by menu.c.
+ * Do not manufacture fake REC key events or auto-enable recording.
+ */
+static MENU_SELECT_FUNC(qvfilm_enter_cinema)
+{
+    if (!lv || !is_movie_mode())
+    {
+        NotifyBox(3000, "QVFIL: Switch to Movie LiveView first.");
+        return;
+    }
+    if (!raw_video_enabled)
+    {
+        NotifyBox(3000, "QVFIL: Enable RAW video in Movie first.");
+        return;
+    }
+    gui_stop_menu();
+    lens_display_set_dirty();
+}
+
+static MENU_UPDATE_FUNC(qvfilm_enter_cinema_update)
+{
+    MENU_SET_RINFO("SET / LIVEVIEW");
+    if (!lv || !is_movie_mode())
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Requires Movie LiveView.");
+    else if (!raw_video_enabled)
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Turn RAW video ON first.");
+}
+
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.2");
+    MENU_SET_RINFO("QVFIL v0.5.3");
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
+    {
+        .name = "QVFIL Enter Cinema",
+        .select = qvfilm_enter_cinema,
+        .update = qvfilm_enter_cinema_update,
+        .icon_type = IT_ACTION,
+        .help = "Close ML menu fully before pressing START/STOP for RAW.",
+        .help2 = "Transparent LiveView still handles keys as a Magic Lantern menu.",
+    },
     {
         .name = "QVFIL Cinema HUD",
         .priv = &qvfilm_hud_enabled,
         .update = qvfilm_hud_menu_update,
         .max = 2,
         .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
-        .help = "Cinema LiveView info. START/STOP records RAW in movie mode.",
-        .help2 = "v0.5.2: Overlay needs Global Draw and idle LiveView; Shutter may switch preview.",
+        .help = "Select HUD style, then use QVFIL Enter Cinema to close ML menu.",
+        .help2 = "v0.5.3: Menu must close fully; press rear START/STOP to record.",
     },
 };
 """
@@ -227,7 +265,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.2 patch: lossless guard + accurate RAW bit depth + optional Cinema Overlay")
+    print("QVFIL v0.5.3 patch: explicit menu exit + lossless guard + optional Cinema Overlay")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 

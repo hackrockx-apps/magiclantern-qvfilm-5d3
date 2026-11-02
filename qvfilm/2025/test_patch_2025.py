@@ -28,7 +28,7 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertIn('menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));', result)
         self.assertLess(result.index('menu_add("Movie", qvfilm_hud_menu'),
                         result.index('menu_add("Movie", raw_video_menu'))
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.2")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
         self.assertIn('qvfilm_top_info', result)
         self.assertIn('qvfilm_bottom_info', result)
         self.assertIn('MODULE_CONFIG(qvfilm_hud_enabled)', result)
@@ -36,7 +36,7 @@ class PatchSafetyTests(unittest.TestCase):
 
     def test_cinema_overlay_uses_actual_raw_bit_depth(self):
         result = qv.patch(self.source)
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.2")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
         self.assertIn('CHOICES("OFF", "Info bars", "Cinema overlay")', result)
         self.assertIn('static void qvfilm_draw_cinema_overlay(void)', result)
         self.assertIn('qvfilm_draw_cinema_overlay();', result)
@@ -44,7 +44,20 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertNotIn('res_x, res_y, BPP_D,', result)
         self.assertIn('RAW_IS_RECORDING ? "REC"', result)
         self.assertIn('!liveview_display_idle()', result)
-        self.assertIn('START/STOP records RAW', result)
+        self.assertIn('START/STOP for RAW.', result)
+
+    def test_explicit_cinema_entry_closes_menu_without_fake_recording(self):
+        result = qv.patch(self.source)
+        self.assertIn('static MENU_SELECT_FUNC(qvfilm_enter_cinema)', result)
+        self.assertIn('gui_stop_menu();', result)
+        self.assertIn('lens_display_set_dirty();', result)
+        self.assertIn('.name = "QVFIL Enter Cinema"', result)
+        self.assertIn('MENU_SET_RINFO("SET / LIVEVIEW")', result)
+        self.assertLess(result.index('.name = "QVFIL Enter Cinema"'),
+                        result.index('.name = "QVFIL Cinema HUD"'))
+        self.assertIn('START/STOP for RAW.', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
+        self.assertNotIn('fake_simple_button(BGMT_REC)', result)
 
     def test_patching_twice_fails_closed(self):
         first = qv.patch(self.source)
