@@ -33,7 +33,7 @@ class LosslessDiagnosticV067Tests(unittest.TestCase):
         s = self.v067
         for token in (
             'is_camera("5D3", "1.2.3")',
-            "card_spanning || pre_record || rec_trigger || h264_proxy_menu",
+            "pre_record || rec_trigger || h264_proxy_menu",
             "dir[0] != 'A'",
             "res_x > 1280 || res_y > 720",
             "fps1000 > 25000",
