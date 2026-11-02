@@ -26,7 +26,7 @@ def patch(source):
         source,
         'static CONFIG_INT("raw.output_format", output_format, 3);',
         'static CONFIG_INT("raw.output_format", output_format, 3);\n'
-        'static CONFIG_INT("qvfilm.hud.enabled", qvfilm_hud_enabled, 0);\n'
+        'static CONFIG_INT("qvfilm.hud.enabled", qvfilm_hud_enabled, 0);\n        "static volatile int qvfilm_last_stop_reason = 0; /* 0=none/user, 1=buffer, 2=write */\n"'
     )
 
     # Real observed 5D3.123 bug: 14-bit lossless compressor returned negative;
@@ -49,7 +49,7 @@ def patch(source):
         '    //~ console_show();'
     )
 
-    # Draw only in Canon's *idle* LiveView status path, at 1s cadence.
+    # Draw only on changes/rare idle refresh; zero repeated bitmap writes during RAW REC.
     # Keeps the original Canon/Magic Lantern shutter/AF/record handlers.
     overlay = r"""
 /* QVFIL Low-Flicker Cinema HUD for 5D3.123 (Magic Lantern 2025).
@@ -158,6 +158,40 @@ static void qvfilm_draw_cinema_overlay(void)
         '    return 0;'
     )
 
+    # Buffer-full is a legitimate capture stop; never override it, since
+    # doing so would recycle buffer slots before their data reaches the card.
+    source = replace_once(
+        source,
+        '    buffer_full = 0;\n\n    if (lv_dispsize == 10)',
+        '    buffer_full = 0;\n'
+        '    qvfilm_last_stop_reason = 0;\n\n'
+        '    if (lv_dispsize == 10)'
+    )
+    source = replace_once(
+        source,
+        '        if (buffer_full)\n'
+        '        {\n'
+        '            goto abort_and_check_early_stop;\n'
+        '        }',
+        '        if (buffer_full)\n'
+        '        {\n'
+        '            qvfilm_last_stop_reason = 1; /* input frames outran writer */\n'
+        '            goto abort_and_check_early_stop;\n'
+        '        }'
+    )
+    source = replace_once(
+        source,
+        '        if (!write_frames(&f, ptr, group_size, num_frames - meta_slots))\n'
+        '        {\n'
+        '            goto abort;\n'
+        '        }',
+        '        if (!write_frames(&f, ptr, group_size, num_frames - meta_slots))\n'
+        '        {\n'
+        '            qvfilm_last_stop_reason = 2; /* card I/O or file write failure */\n'
+        '            goto abort;\n'
+        '        }'
+    )
+
     # Explain the guard in the Data format submenu before REC is pressed.
     source = replace_once(
         source,
@@ -234,7 +268,7 @@ static MENU_UPDATE_FUNC(qvfilm_enter_cinema_update)
 
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.5");
+    MENU_SET_RINFO("QVFIL v0.5.6");
     if (qvfilm_hud_enabled == 2 && !get_global_draw_setting())
         MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Enable Global Draw to use Cinema Overlay.");
 }
@@ -244,6 +278,38 @@ static MENU_UPDATE_FUNC(qvfilm_hud_diagnostics_update)
     MENU_SET_VALUE("Draws:%u", qvfilm_hud_draws);
     MENU_SET_RINFO("Gate:%d", qvfilm_hud_gate_code);
     MENU_SET_HELP("Gate 7 is normal: QVFIL bitmap painting pauses during RAW REC.");
+}
+
+/* MLV Lite on the 5D3 prioritizes A:/ (CF) when mounted; otherwise the
+ * selected shooting card is used. We report the same destination path as
+ * get_next_raw_movie_file_name() rather than guessing from boot card.
+ * Demand estimate is a theoretical uncompressed payload rate, NOT a speed test.
+ */
+static MENU_UPDATE_FUNC(qvfilm_media_check_update)
+{
+    const char *dir = get_cf_dcim_dir();
+    char drive = dir ? dir[0] : '?';
+    int fps1000 = fps_get_current_x1000();
+    uint64_t bytes_second = (uint64_t) res_x * res_y * BPP * fps1000 / 8000;
+    int demand_tenths = (int) (bytes_second / 100000);
+    if (demand_tenths < 0) demand_tenths = 0;
+
+    MENU_SET_VALUE("%c: %d.%dMB/s", drive,
+                   demand_tenths / 10, demand_tenths % 10);
+    const char *stop =
+        qvfilm_last_stop_reason == 1 ? "BUFFER" :
+        qvfilm_last_stop_reason == 2 ? "WRITE" : "NONE";
+    MENU_SET_RINFO("Last:%s", stop);
+    if (drive != 'A')
+        MENU_SET_WARNING(MENU_WARN_ADVICE,
+            "Target SD/no CF. 5D3 SD is non-UHS. Required >=%d.%dMB/s + overhead. "
+            "Use UDMA7 CF for demanding RAW recording.",
+            demand_tenths / 10, demand_tenths % 10);
+    else
+        MENU_SET_WARNING(MENU_WARN_INFO,
+            "Target CF. RAW needs >=%d.%dMB/s + overhead. "
+            "Check sustained CF write speed; last stop may refer to prior card.",
+            demand_tenths / 10, demand_tenths % 10);
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
@@ -262,13 +328,19 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .max = 2,
         .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
         .help = "Select HUD style, then use QVFIL Enter Cinema to close ML menu.",
-        .help2 = "v0.5.5: Low-flicker. No repeated bitmap painting during RAW REC.",
+        .help2 = "v0.5.6: Low-flicker + read-only storage/stop diagnostics.",
     },
     {
         .name = "QVFIL HUD Diagnostics",
         .update = qvfilm_hud_diagnostics_update,
         .help = "Read Draws and Gate after entering Cinema and returning to Movie.",
         .help2 = "0=ready, 1=OFF, 2=LV/RAW, 3=GD, 4=BMP, 6=UI busy, 7=REC pause.",
+    },
+    {
+        .name = "QVFIL Storage Check",
+        .update = qvfilm_media_check_update,
+        .help = "MLV target A=CF, B=SD. Shows estimated RAW bandwidth.",
+        .help2 = "Last: BUFFER = queue full; WRITE = failed file write; NONE = no failure.",
     },
 };
 """
@@ -335,7 +407,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.5 patch: low-flicker HUD with zero sustained RAW REC bitmap writes")
+    print("QVFIL v0.5.6 patch: 5D3 RAW storage target and stop-reason diagnostics; safe buffer halt preserved")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
