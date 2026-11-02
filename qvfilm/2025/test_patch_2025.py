@@ -68,6 +68,17 @@ class PatchSafetyTests(unittest.TestCase):
                         result.index('unsigned int raw_rec_polling_cbr(')]
         self.assertNotIn('qvfilm_draw_cinema_overlay();', status)
 
+    def test_on_camera_hud_status_is_read_only_and_retained(self):
+        result = qv.patch(self.source)
+        self.assertIn('.name = "QVFIL HUD Diagnostics"', result)
+        self.assertIn('MENU_SET_VALUE("Draws:%u", qvfilm_hud_draws)', result)
+        self.assertIn('MENU_SET_RINFO("Gate:%d", qvfilm_hud_gate_code)', result)
+        self.assertIn('qvfilm_hud_gate_code = 3', result)
+        self.assertIn('qvfilm_hud_gate_code = 4', result)
+        self.assertIn('qvfilm_hud_gate_code = 6', result)
+        self.assertIn('if (gui_menu_shown()) return;', result)
+        self.assertIn('qvfilm_hud_draws++;', result)
+
     def test_explicit_cinema_entry_closes_menu_without_fake_recording(self):
         result = qv.patch(self.source)
         self.assertIn('static MENU_SELECT_FUNC(qvfilm_enter_cinema)', result)
