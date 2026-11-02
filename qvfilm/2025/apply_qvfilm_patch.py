@@ -57,13 +57,24 @@ def patch(source):
  * Drawn during ShootTask polling after Canon's shooting status UI updates,
  * bounded to <=4 Hz, never during VSYNC or RAW/EDMAC capture.
  */
+/* Observable run-time gate; counters visible in Movie > QVFIL HUD Diagnostics.
+ * 0=drawn, 1=disabled, 2=not Movie LiveView/RAW, 3=GD setting OFF,
+ * 4=LCD/bitmap unavailable, 5=ML menu visible, 6=Canon UI not idle.
+ * No card writes, no log dumps, no polling in the frame capture path.
+ */
+static volatile unsigned int qvfilm_hud_draws = 0;
+static volatile int qvfilm_hud_gate_code = 1;
+
 static void qvfilm_draw_cinema_overlay(void)
 {
-    if (qvfilm_hud_enabled != 2 || !is_camera("5D3", "*") ||
-        !raw_video_enabled || !lv || !is_movie_mode() ||
-        !get_global_draw_setting() || !DISPLAY_IS_ON || !bmp_is_on() ||
-        gui_menu_shown() || !liveview_display_idle())
-        return;
+    if (qvfilm_hud_enabled != 2) { qvfilm_hud_gate_code = 1; return; }
+    if (!is_camera("5D3", "*") || !raw_video_enabled || !lv || !is_movie_mode())
+    { qvfilm_hud_gate_code = 2; return; }
+    if (!get_global_draw_setting()) { qvfilm_hud_gate_code = 3; return; }
+    if (!DISPLAY_IS_ON || !bmp_is_on()) { qvfilm_hud_gate_code = 4; return; }
+    if (gui_menu_shown()) { qvfilm_hud_gate_code = 5; return; }
+    if (!liveview_display_idle()) { qvfilm_hud_gate_code = 6; return; }
+    qvfilm_hud_gate_code = 0;
 
     /* Canon may use a standard LV display mode where get_global_draw() is
      * false despite Global Draw setting being ON. Since this mode is explicitly
@@ -94,6 +105,7 @@ static void qvfilm_draw_cinema_overlay(void)
                    OUTPUT_COMPRESSION ? "LJ" : "RAW",
                    lens_info.iso);
     )
+    qvfilm_hud_draws++;
 }
 """
     source = replace_once(
@@ -201,6 +213,13 @@ static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
         MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Enable Global Draw to use Cinema Overlay.");
 }
 
+static MENU_UPDATE_FUNC(qvfilm_hud_diagnostics_update)
+{
+    MENU_SET_VALUE("Draws:%u", qvfilm_hud_draws);
+    MENU_SET_RINFO("Gate:%d", qvfilm_hud_gate_code);
+    MENU_SET_HELP("Gate: 0 drawn, 1 OFF, 2 not LV/RAW, 3 GD OFF, 4 LCD OFF, 5 menu, 6 UI busy.");
+}
+
 static struct menu_entry qvfilm_hud_menu[] = {
     {
         .name = "QVFIL Enter Cinema",
@@ -218,6 +237,12 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
         .help = "Select HUD style, then use QVFIL Enter Cinema to close ML menu.",
         .help2 = "v0.5.4: Compatible with Canon LiveView UI; rear START/STOP records.",
+    },
+    {
+        .name = "QVFIL HUD Diagnostics",
+        .update = qvfilm_hud_diagnostics_update,
+        .help = "Read Draws and Gate after entering Cinema and returning to Movie.",
+        .help2 = "0=drawn, 1=OFF, 2=not LV/RAW, 3=GD, 4=LCD, 5=ML menu, 6=busy.",
     },
 };
 """
