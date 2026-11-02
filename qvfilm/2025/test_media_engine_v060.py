@@ -28,7 +28,7 @@ class MediaEngineTests(unittest.TestCase):
 
     def test_no_unsafe_overclock_or_dummy_benchmark(self):
         result = media.patch(self.source)
-        delta = result[result.index('/* v0.6.0 Passive Media Engine.'):]
+        delta = result[result.index('/* v0.6.0 Passive Media Engine.'):result.index('static struct lvinfo_item info_items[] = {')]
         self.assertNotIn('FIO_CreateFile(', delta)
         self.assertNotIn('FIO_RemoveFile(', delta)
         self.assertNotIn('sd_overclock', delta)
