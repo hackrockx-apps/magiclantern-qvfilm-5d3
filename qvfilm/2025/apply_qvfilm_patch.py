@@ -59,7 +59,7 @@ def patch(source):
  */
 /* Observable run-time gate; counters visible in Movie > QVFIL HUD Diagnostics.
  * 0=drawn, 1=disabled, 2=not Movie LiveView/RAW, 3=GD setting OFF,
- * 4=LCD/bitmap unavailable, 5=ML menu visible, 6=Canon UI not idle.
+ * 4=LCD/bitmap unavailable, 6=Canon UI not idle.
  * No card writes, no log dumps, no polling in the frame capture path.
  */
 static volatile unsigned int qvfilm_hud_draws = 0;
@@ -72,7 +72,8 @@ static void qvfilm_draw_cinema_overlay(void)
     { qvfilm_hud_gate_code = 2; return; }
     if (!get_global_draw_setting()) { qvfilm_hud_gate_code = 3; return; }
     if (!DISPLAY_IS_ON || !bmp_is_on()) { qvfilm_hud_gate_code = 4; return; }
-    if (gui_menu_shown()) { qvfilm_hud_gate_code = 5; return; }
+    /* Preserve the most recent LiveView gate when the operator reopens Movie. */
+    if (gui_menu_shown()) return;
     if (!liveview_display_idle()) { qvfilm_hud_gate_code = 6; return; }
     qvfilm_hud_gate_code = 0;
 
@@ -217,7 +218,7 @@ static MENU_UPDATE_FUNC(qvfilm_hud_diagnostics_update)
 {
     MENU_SET_VALUE("Draws:%u", qvfilm_hud_draws);
     MENU_SET_RINFO("Gate:%d", qvfilm_hud_gate_code);
-    MENU_SET_HELP("Gate: 0 drawn, 1 OFF, 2 not LV/RAW, 3 GD OFF, 4 LCD OFF, 5 menu, 6 UI busy.");
+    MENU_SET_HELP("After closing menu: 0 drawn, 1 OFF, 2 not LV/RAW, 3 GD OFF, 4 LCD OFF, 6 UI busy.");
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
@@ -242,7 +243,7 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .name = "QVFIL HUD Diagnostics",
         .update = qvfilm_hud_diagnostics_update,
         .help = "Read Draws and Gate after entering Cinema and returning to Movie.",
-        .help2 = "0=drawn, 1=OFF, 2=not LV/RAW, 3=GD, 4=LCD, 5=ML menu, 6=busy.",
+        .help2 = "After LiveView, Gate 0=drawn, 1=OFF, 2=not LV/RAW, 3=GD, 4=LCD, 6=busy.",
     },
 };
 """
