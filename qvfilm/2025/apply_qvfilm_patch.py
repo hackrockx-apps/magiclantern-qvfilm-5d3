@@ -54,35 +54,46 @@ def patch(source):
     overlay = r"""
 /* QVFIL Cinema Overlay: opt-in, non-invasive bitmap HUD (not RAW pixels).
  * Do not draw in menus or Canon GUI states; half-shutter/AF can switch preview.
- * The existing ShootTask status refresh is ~1 Hz, never every VSYNC.
+ * Drawn during ShootTask polling after Canon's shooting status UI updates,
+ * bounded to <=4 Hz, never during VSYNC or RAW/EDMAC capture.
  */
 static void qvfilm_draw_cinema_overlay(void)
 {
     if (qvfilm_hud_enabled != 2 || !is_camera("5D3", "*") ||
         !raw_video_enabled || !lv || !is_movie_mode() ||
-        !get_global_draw() || gui_menu_shown() || !liveview_display_idle())
+        !get_global_draw_setting() || !DISPLAY_IS_ON || !bmp_is_on() ||
+        gui_menu_shown() || !liveview_display_idle())
         return;
+
+    /* Canon may use a standard LV display mode where get_global_draw() is
+     * false despite Global Draw setting being ON. Since this mode is explicitly
+     * user selected, use the setting and guard actual bitmap/display state.
+     * Never re-enable LCD or change Canon UI display modes ourselves. */
+    static int last_overlay_draw = INT_MIN;
+    if (!should_run_polling_action(250, &last_overlay_draw)) return;
 
     const char *state =
         RAW_IS_RECORDING ? "REC" :
         RAW_IS_PREPARING ? "ARMING" :
         RAW_IS_FINISHING ? "ENDING" : "STBY";
     int fps = fps_get_current_x1000();
-    bmp_fill(COLOR_BG_DARK, 32, 35, 656, 30);
-    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
-               44, 40, "QVFIL CINEMA");
-    bmp_printf(FONT(FONT_MED,
-                    RAW_IS_RECORDING ? COLOR_RED : COLOR_WHITE,
-                    COLOR_BG_DARK), 280, 40, "%s", state);
-    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
-               475, 40, "%d.%02d FPS", fps / 1000, (fps % 1000) / 10);
+    BMP_LOCK(
+        bmp_fill(COLOR_ALMOST_BLACK, 24, 24, 672, 30);
+        bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
+                   36, 29, "QVFIL CINEMA v0.5.4");
+        bmp_printf(FONT(FONT_MED,
+                        RAW_IS_RECORDING ? COLOR_RED : COLOR_WHITE,
+                        COLOR_ALMOST_BLACK), 328, 29, "%s", state);
+        bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
+                   504, 29, "%d.%02d FPS", fps / 1000, (fps % 1000) / 10);
 
-    bmp_fill(COLOR_BG_DARK, 32, 397, 656, 30);
-    bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_BG_DARK),
-               44, 403, "%dx%d  %db %s    ISO %d",
-               res_x, res_y, BPP,
-               OUTPUT_COMPRESSION ? "LJ" : "RAW",
-               lens_info.iso);
+        bmp_fill(COLOR_ALMOST_BLACK, 24, 422, 672, 30);
+        bmp_printf(FONT(FONT_MED, COLOR_WHITE, COLOR_ALMOST_BLACK),
+                   36, 427, "%dx%d  %db %s  ISO %d",
+                   res_x, res_y, BPP,
+                   OUTPUT_COMPRESSION ? "LJ" : "RAW",
+                   lens_info.iso);
+    )
 }
 """
     source = replace_once(
@@ -94,13 +105,19 @@ static void qvfilm_draw_cinema_overlay(void)
         'static REQUIRES(ShootTask)\n'
         'void show_recording_status()'
     )
+    # The old v0.5.3 call ran inside show_recording_status() only after the
+    # ~1-second early-return, and its pixels could be cleared by Canon's UI.
+    # Draw after core status from the main ShootTask callback instead.
     source = replace_once(
         source,
-        '    /* Determine if we should redraw */\n'
-        '    if (!RAW_IS_IDLE && liveview_display_idle())',
-        '    qvfilm_draw_cinema_overlay();\n'
-        '    /* Determine if we should redraw */\n'
-        '    if (!RAW_IS_IDLE && liveview_display_idle())'
+        '    /* update status messages */\n'
+        '    show_recording_status();\n\n'
+        '    return 0;',
+        '    /* update status messages */\n'
+        '    show_recording_status();\n'
+        '    /* QVFIL opt-in bitmap overlay goes last, outside the 1s gate. */\n'
+        '    qvfilm_draw_cinema_overlay();\n\n'
+        '    return 0;'
     )
 
     # Explain the guard in the Data format submenu before REC is pressed.
@@ -179,7 +196,9 @@ static MENU_UPDATE_FUNC(qvfilm_enter_cinema_update)
 
 static MENU_UPDATE_FUNC(qvfilm_hud_menu_update)
 {
-    MENU_SET_RINFO("QVFIL v0.5.3");
+    MENU_SET_RINFO("QVFIL v0.5.4");
+    if (qvfilm_hud_enabled == 2 && !get_global_draw_setting())
+        MENU_SET_WARNING(MENU_WARN_NOT_WORKING, "Enable Global Draw to use Cinema Overlay.");
 }
 
 static struct menu_entry qvfilm_hud_menu[] = {
@@ -198,7 +217,7 @@ static struct menu_entry qvfilm_hud_menu[] = {
         .max = 2,
         .choices = CHOICES("OFF", "Info bars", "Cinema overlay"),
         .help = "Select HUD style, then use QVFIL Enter Cinema to close ML menu.",
-        .help2 = "v0.5.3: Menu must close fully; press rear START/STOP to record.",
+        .help2 = "v0.5.4: Compatible with Canon LiveView UI; rear START/STOP records.",
     },
 };
 """
@@ -265,7 +284,7 @@ def main():
     original = file.read_text(encoding="utf-8")
     updated = patch(original)  # all anchors validated before writing
     file.write_text(updated, encoding="utf-8")
-    print("QVFIL v0.5.3 patch: explicit menu exit + lossless guard + optional Cinema Overlay")
+    print("QVFIL v0.5.4 patch: shoot-task OLED-style LCD overlay + Canon LV compatibility")
     print("WARNING: CPU/emulator build PASS is not camera hardware PASS. NOT FOR INSTALLATION.")
 
 
