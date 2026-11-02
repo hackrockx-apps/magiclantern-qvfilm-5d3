@@ -108,3 +108,21 @@ A prior compatibility audit recorded that the Canon public firmware version was 
 - Vì vậy, firmware verification blocker đã được gỡ; **recovery-media blocker vẫn còn**. PR này vẫn chỉ source diagnosis; chưa có module mới để cài.
 - Không cập nhật Canon firmware lên 1.3.3 hoặc mới hơn: Canon thông báo các phiên bản đó không thể downgrade về 1.2.3. https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
 
+
+
+## Cập nhật tiến độ phát triển Diagnostic Module — 03/11/2026
+
+Người vận hành xác nhận đã tạo bản sao toàn bộ thẻ SD/CF đang chạy Magic Lantern. Trạng thái hồ sơ được nâng thành **FULL-CARD BACKUP REPORTED**. Chưa nhận file ảnh đĩa, checksum hoặc kết quả restore/boot từ bản sao, do đó chưa đánh dấu backup integrity PASS.
+
+### Công việc mới trong nhánh v0.6.7
+
+- `QVFIL_V067_DIAGNOSTIC_MODULE_DESIGN_VI.md`: đặc tả fail-closed, giới hạn telemetry và các cổng kiểm soát.
+- `test_lossless14_fail_closed_model_v067.py`: host-only model kiểm tra bốn bất biến: mã lỗi -1/-2/-3 không thể trở thành frame writer-eligible; frame đang chờ phải bị loại khỏi hàng đợi; đường thành công vẫn ghi được; finalize chỉ được gọi khi đã abort.
+- Workflow được mở rộng để chạy cả static source audit lẫn host model test.
+- Không thay đổi `mlv_lite.c`, `lossless.c`, không tạo module `.mo`, không tạo firmware và không bật 14-bit Lossless.
+
+### Phát hiện quan trọng từ audit queue
+
+Frame đã được đưa vào writing queue ở trạng thái `SLOT_CAPTURING` trước khi compressor xử lý. Do đó, chỉ đặt `buffer_full = 1` hoặc bỏ qua ASSERT không đủ chứng minh an toàn: recorder có thể vẫn đợi slot hoặc flush nhầm dữ liệu lỗi. Cần trace và kiểm chứng đường `abort_and_check_early_stop`, drain queue và finalize trước khi viết C instrumentation.
+
+**Trạng thái:** `V067_DESIGN_ADDED` / `HOST_MODEL_TEST_ADDED` / `STATIC_SOURCE_AUDIT_RETAINED` / `FULL_CARD_BACKUP_OPERATOR_REPORTED` / `BACKUP_INTEGRITY_NOT_VERIFIED` / `NO_CAMERA_MODULE_BUILT` / `LOSSLESS14_BLOCKED`.
