@@ -38,6 +38,11 @@ jobs:
             --mlv-lite upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
             --lossless upstream-2025/modules/silent/lossless.c \
             --qvfilm-patch qvfilm/2025/apply_qvfilm_patch.py
+      - name: Run host-only fail-closed queue model tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python qvfilm/2025/test_lossless14_fail_closed_model_v067.py
       - name: Assert no camera module or firmware artifact is produced
         shell: bash
         run: |
