@@ -59,7 +59,7 @@ def patch(source):
  */
 /* Observable run-time gate; counters visible in Movie > QVFIL HUD Diagnostics.
  * 0=drawn, 1=disabled, 2=not Movie LiveView/RAW, 3=GD setting OFF,
- * 4=LCD/bitmap unavailable, 6=Canon UI not idle.
+ * 4=bitmap palette disabled, 6=Canon UI not idle.
  * No card writes, no log dumps, no polling in the frame capture path.
  */
 static volatile unsigned int qvfilm_hud_draws = 0;
@@ -71,7 +71,7 @@ static void qvfilm_draw_cinema_overlay(void)
     if (!is_camera("5D3", "*") || !raw_video_enabled || !lv || !is_movie_mode())
     { qvfilm_hud_gate_code = 2; return; }
     if (!get_global_draw_setting()) { qvfilm_hud_gate_code = 3; return; }
-    if (!DISPLAY_IS_ON || !bmp_is_on()) { qvfilm_hud_gate_code = 4; return; }
+    if (!bmp_is_on()) { qvfilm_hud_gate_code = 4; return; }
     /* Preserve the most recent LiveView gate when the operator reopens Movie. */
     if (gui_menu_shown()) return;
     if (!liveview_display_idle()) { qvfilm_hud_gate_code = 6; return; }
