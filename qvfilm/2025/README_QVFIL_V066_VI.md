@@ -56,3 +56,10 @@ LOSSLESS14_BLOCKED
 - Không cập nhật lên Canon 1.3.3 hoặc mới hơn: Canon xác nhận không thể downgrade các bản đó về 1.2.3. https://www.cla.canon.com/en/support/product-advisories/adv-eos5d-markiii-miscpage
 - v0.6.6 là cấu hình đang PASS; giữ nguyên thẻ hiện tại. ROM*.BIN backup đã được báo cáo PASS, nhưng chưa có hồ sơ xác minh bản sao toàn thẻ có thể phục hồi hoặc thẻ dự phòng boot PASS.
 - Vì vậy, tiếp tục phát triển source/test được; chưa cài module thử nghiệm mới cho đến khi xác minh recovery media. 14-bit Lossless vẫn BLOCKED.
+
+
+## Cập nhật bảo toàn sau xác nhận của người vận hành — 03/11/2026
+- Firmware Canon công khai 1.2.3 đã được người vận hành xác nhận; khớp Magic Lantern 5D3.123.
+- Người vận hành xác nhận đã tạo bản sao toàn bộ thẻ SD/CF đang chạy Magic Lantern. Hồ sơ đánh dấu `FULL_CARD_BACKUP_OPERATOR_REPORTED`; checksum, khả năng đọc và thử phục hồi/boot từ bản sao chưa được xác minh độc lập.
+- Giữ nguyên thẻ gốc đang chạy v0.6.6, không ghi đè. Không cần cài lại Magic Lantern.
+- Module mới vẫn phải qua kiểm tra source và recovery trước khi phát hành. Không bật 14-bit Lossless trong giai đoạn chẩn đoán.
