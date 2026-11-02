@@ -28,7 +28,7 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertIn('menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));', result)
         self.assertLess(result.index('menu_add("Movie", qvfilm_hud_menu'),
                         result.index('menu_add("Movie", raw_video_menu'))
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.5")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.6")', result)
         self.assertIn('qvfilm_top_info', result)
         self.assertIn('qvfilm_bottom_info', result)
         self.assertIn('MODULE_CONFIG(qvfilm_hud_enabled)', result)
@@ -36,7 +36,7 @@ class PatchSafetyTests(unittest.TestCase):
 
     def test_cinema_overlay_uses_actual_raw_bit_depth(self):
         result = qv.patch(self.source)
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.5")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.6")', result)
         self.assertIn('CHOICES("OFF", "Info bars", "Cinema overlay")', result)
         self.assertIn('static void qvfilm_draw_cinema_overlay(void)', result)
         self.assertIn('qvfilm_draw_cinema_overlay();', result)
@@ -103,8 +103,22 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertLess(result.index('.name = "QVFIL Enter Cinema"'),
                         result.index('.name = "QVFIL Cinema HUD"'))
         self.assertIn('START/STOP for RAW.', result)
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.5")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.6")', result)
         self.assertNotIn('fake_simple_button(BGMT_REC)', result)
+
+    def test_storage_target_and_safe_stop_reason(self):
+        result = qv.patch(self.source)
+        self.assertIn('.name = "QVFIL Storage Check"', result)
+        self.assertIn('get_cf_dcim_dir()', result)
+        self.assertIn('qvfilm_last_stop_reason = 1;', result)
+        self.assertIn('qvfilm_last_stop_reason = 2;', result)
+        self.assertIn('qvfilm_last_stop_reason = 0;', result)
+        self.assertIn('MENU_SET_VALUE("%c: %d.%dMB/s"', result)
+        self.assertIn('Last:%s', result)
+        self.assertIn('uint64_t bytes_second', result)
+        self.assertIn('5D3 SD is non-UHS', result)
+        self.assertIn('goto abort_and_check_early_stop;', result)
+        self.assertIn('goto abort;', result)
 
     def test_patching_twice_fails_closed(self):
         first = qv.patch(self.source)
