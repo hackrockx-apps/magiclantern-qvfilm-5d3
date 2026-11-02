@@ -19,7 +19,7 @@ These are **specific code defects / plausible blockers**, not measured runtime p
 ## Changes to patch (all confined to `modules/raw_video/mlv_lite/mlv_lite.c`)
 
 - Retain `OFF / Info bars / Cinema overlay` choice, `QVFIL Enter Cinema`, Canon Movie menu, existing MLV recording controls, 10-bit uncompressed baseline.
-- In Cinema overlay mode, require `get_global_draw_setting()`, but deliberately **do not require** `get_global_draw()`, allowing opt-in overlay over Canon default LiveView display mode. Still require model 5D3, Movie LiveView, RAW enabled, liveview display idle, Canon menu closed, LCD on and bitmap palette active.
+- In Cinema overlay mode, require `get_global_draw_setting()`, but deliberately **do not require** `get_global_draw()`, allowing opt-in overlay over Canon default LiveView display mode. Still require model 5D3, Movie LiveView, RAW enabled, liveview display idle, Canon menu closed, bitmap palette active (module-safe bmp_is_on).
 - Migrate draw to end of `raw_rec_polling_cbr()` (ShootTask), **after** default ML status, instead of gating on the one-second early return inside `show_recording_status()`.
 - Throttle painting to at most once per **250ms** (no VSYNC/EDMAC/RAW capture hook). Guard drawing with `BMP_LOCK` and use opaque dark palette `COLOR_ALMOST_BLACK`, not transparent `COLOR_BG_DARK`.
 - Top bar: `QVFIL CINEMA v0.5.4`, `STBY / ARMING / REC / ENDING` (REC red), current FPS. Bottom: output resolution, **BPP of actual RAW output**, uncompressed/lossless indicator, ISO. These are all user-configured/recorder state displays, not an altered RAW image.
