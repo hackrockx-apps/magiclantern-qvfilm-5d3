@@ -26,7 +26,8 @@ def patch(source):
         source,
         'static CONFIG_INT("raw.output_format", output_format, 3);',
         'static CONFIG_INT("raw.output_format", output_format, 3);\n'
-        'static CONFIG_INT("qvfilm.hud.enabled", qvfilm_hud_enabled, 0);\n        "static volatile int qvfilm_last_stop_reason = 0; /* 0=none/user, 1=buffer, 2=write */\n"'
+        'static CONFIG_INT("qvfilm.hud.enabled", qvfilm_hud_enabled, 0);\n'
+        'static volatile int qvfilm_last_stop_reason = 0; /* 0=none,1=buffer,2=write */\n'
     )
 
     # Real observed 5D3.123 bug: 14-bit lossless compressor returned negative;
