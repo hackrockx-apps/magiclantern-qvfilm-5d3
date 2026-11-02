@@ -44,7 +44,7 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertNotIn('res_x, res_y, BPP_D,', result)
         self.assertIn('RAW_IS_RECORDING ? "REC"', result)
         self.assertIn('!liveview_display_idle()', result)
-        self.assertIn('START/STOP records RAW', result)
+        self.assertIn('START/STOP for RAW.', result)
 
     def test_explicit_cinema_entry_closes_menu_without_fake_recording(self):
         result = qv.patch(self.source)
