@@ -1,4 +1,4 @@
-# QVFIL v0.6.6 – Cinema Slim HUD (Canon EOS 5D Mark III / firmware 1.2.3)
+# QVFIL v0.6.6 – Cinema Slim HUD (Canon EOS 5D Mark III / Magic Lantern 5D3.123 target)
 
 ## Kết quả nghiệm thu (02/11/2026)
 - **QVFIL v0.6.6 Cinema Slim: USER HARDWARE PASS** — người dùng đã hoàn tất nghiệm thu trên Canon EOS 5D Mark III và xác nhận PASS.
@@ -7,7 +7,7 @@
 - Người vận hành xác nhận **Focus Peak hoạt động** và quay RAW **10 giây** ở cấu hình thực tế ổn định. Chưa có file MLV gửi để phân tích toàn vẹn khung hình độc lập; không tuyên bố zero drops dựa trên ảnh LCD.
 - Thanh thông số Canon/ML dưới cùng còn hiển thị song song với HUD; panel 2x2 v0.6.5 (490x70 pixels) và panel phụ phía trên (330x26) chiếm nhiều diện tích màn hình.
 - V0.6.4 đã được nghiệm thu Large cinema hiển thị khi REC không nhấp nháy; v0.6.3 đã có 1920x1080 RAW 4 phút MLV user PASS.
-- **Giữ v0.6.5 làm mốc khôi phục an toàn.**
+- **v0.6.6 hiện là mốc nghiệm thu phần mềm/người dùng mới nhất; giữ nguyên thẻ v0.6.5 làm phương án rollback.**
 
 ## Nâng cấp v0.6.6
 - Giữ nguyên 5 chế độ HUD v0.6.5 theo đúng index: OFF, Info bars, Cinema overlay, Large cinema, Cinema clean.
@@ -29,7 +29,7 @@
 - `LOSSLESS14_BLOCKED`
 
 ## Bảo toàn hệ thống
-- Giữ thẻ và cấu hình v0.6.6 đã PASS nguyên trạng làm mốc làm việc hiện tại; không thử lossless14/3K hoặc thay bootflag/firmware/clock.
+- Giữ thẻ và cấu hình v0.6.6 đã PASS nguyên trạng làm mốc làm việc hiện tại; thẻ v0.6.5 là rollback. Không thử lossless14/3K hoặc thay bootflag/firmware/clock.
 - Trước khi chuẩn bị bất kỳ module cài mới nào, hoàn tất xác minh độc lập firmware công khai Canon, audit đọc-thẻ và backup/recovery review theo readiness gate hiện hành.
 
 ## Checklist nghiệm thu ban đầu (tham chiếu, không yêu cầu chạy lại)
