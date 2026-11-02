@@ -28,7 +28,7 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertIn('menu_add("Movie", qvfilm_hud_menu, COUNT(qvfilm_hud_menu));', result)
         self.assertLess(result.index('menu_add("Movie", qvfilm_hud_menu'),
                         result.index('menu_add("Movie", raw_video_menu'))
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.4")', result)
         self.assertIn('qvfilm_top_info', result)
         self.assertIn('qvfilm_bottom_info', result)
         self.assertIn('MODULE_CONFIG(qvfilm_hud_enabled)', result)
@@ -36,7 +36,7 @@ class PatchSafetyTests(unittest.TestCase):
 
     def test_cinema_overlay_uses_actual_raw_bit_depth(self):
         result = qv.patch(self.source)
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.4")', result)
         self.assertIn('CHOICES("OFF", "Info bars", "Cinema overlay")', result)
         self.assertIn('static void qvfilm_draw_cinema_overlay(void)', result)
         self.assertIn('qvfilm_draw_cinema_overlay();', result)
@@ -45,6 +45,28 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertIn('RAW_IS_RECORDING ? "REC"', result)
         self.assertIn('!liveview_display_idle()', result)
         self.assertIn('START/STOP for RAW.', result)
+
+    def test_cinema_overlay_renders_on_canon_liveview(self):
+        result = qv.patch(self.source)
+        fn = result[result.index('static void qvfilm_draw_cinema_overlay(void)'):
+                    result.index("/* Display the 'Recording...' icon and status */")]
+        self.assertIn('get_global_draw_setting()', fn)
+        self.assertNotIn('!get_global_draw()', fn)
+        self.assertIn('!DISPLAY_IS_ON', fn)
+        self.assertIn('!bmp_is_on()', fn)
+        self.assertIn('gui_menu_shown()', fn)
+        self.assertIn('liveview_display_idle()', fn)
+        self.assertIn('BMP_LOCK(', fn)
+        self.assertIn('COLOR_ALMOST_BLACK', fn)
+        self.assertIn('should_run_polling_action(250', fn)
+        self.assertIn('QVFIL CINEMA v0.5.4', fn)
+        update = result[result.index('unsigned int raw_rec_polling_cbr('):
+                        result.index('static void unhack_liveview_vsync')]
+        self.assertLess(update.index('show_recording_status();'),
+                        update.index('qvfilm_draw_cinema_overlay();'))
+        status = result[result.index('void show_recording_status()'):
+                        result.index('unsigned int raw_rec_polling_cbr(')]
+        self.assertNotIn('qvfilm_draw_cinema_overlay();', status)
 
     def test_explicit_cinema_entry_closes_menu_without_fake_recording(self):
         result = qv.patch(self.source)
@@ -56,7 +78,7 @@ class PatchSafetyTests(unittest.TestCase):
         self.assertLess(result.index('.name = "QVFIL Enter Cinema"'),
                         result.index('.name = "QVFIL Cinema HUD"'))
         self.assertIn('START/STOP for RAW.', result)
-        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.3")', result)
+        self.assertIn('MENU_SET_RINFO("QVFIL v0.5.4")', result)
         self.assertNotIn('fake_simple_button(BGMT_REC)', result)
 
     def test_patching_twice_fails_closed(self):
