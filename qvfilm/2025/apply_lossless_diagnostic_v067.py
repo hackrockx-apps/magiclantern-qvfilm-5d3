@@ -353,77 +353,72 @@ static void qvfilm_lossless_diag_mark_failure(int code, int frame, int slot, int
     # truncating the writer queue or releasing any frame buffers.
     source = replace_once(
         source,
-        '    msg_queue_post(compress_mq, INT_MIN);',
-        r'''    msg_queue_post(compress_mq, INT_MIN);
-
-    if (qvfilm_lossless_diag_queue_started)
-    {
-        uint32_t qvfilm_drain_t0 = get_ms_clock();
-        while (!qvfilm_lossless_diag_drain_ack &&
-               (uint32_t)(get_ms_clock() - qvfilm_drain_t0) < 5000)
-        {
-            msleep(10);
-        }
-
-        if (!qvfilm_lossless_diag_drain_ack)
-        {
-            /* The compressor may still own a frame buffer. Do not free it. */
-            qvfilm_lossless_diag_drain_timeout = 1;
-            qvfilm_lossless_diag_reboot_required = 1;
-            qvfilm_lossless_diag_status = QVFIL_LD_DRAIN_TIMEOUT;
-            qvfilm_lossless_diag_active = 0;
-            printf("QVFIL LOSSLESS DIAG: queue drain timeout; buffers retained until reboot.\n");
-        }
-        else if (qvfilm_lossless_diag_fault)
-        {
-            /* Keep only the valid prefix before the failed slot. The failed
-             * slot and all later queued frames are discarded, never written.
-             */
-            int qvfilm_tail_before = writing_queue_tail;
-            int qvfilm_failed_pos = writing_queue_head;
-            while (qvfilm_failed_pos != qvfilm_tail_before &&
-                   writing_queue[qvfilm_failed_pos] != qvfilm_lossless_diag_failed_slot)
-            {
-                INC_MOD(qvfilm_failed_pos, COUNT(writing_queue));
-            }
-
-            if (qvfilm_failed_pos != qvfilm_tail_before)
-            {
-                int qvfilm_i = qvfilm_failed_pos;
-                while (qvfilm_i != qvfilm_tail_before)
-                {
-                    int qvfilm_slot = writing_queue[qvfilm_i];
-                    if (qvfilm_slot >= 0 && qvfilm_slot < COUNT(slots) &&
-                        slots[qvfilm_slot].status != SLOT_FREE &&
-                        slots[qvfilm_slot].status != SLOT_RESERVED)
-                    {
-                        free_slot(qvfilm_slot);
-                    }
-                    INC_MOD(qvfilm_i, COUNT(writing_queue));
-                }
-                writing_queue_tail = qvfilm_failed_pos;
-            }
-            else
-            {
-                /* Unexpected queue mismatch: discard every pending slot. */
-                for (int qvfilm_i = writing_queue_head;
-                     qvfilm_i != qvfilm_tail_before;
-                     INC_MOD(qvfilm_i, COUNT(writing_queue)))
-                {
-                    int qvfilm_slot = writing_queue[qvfilm_i];
-                    if (qvfilm_slot >= 0 && qvfilm_slot < COUNT(slots) &&
-                        slots[qvfilm_slot].status != SLOT_FREE &&
-                        slots[qvfilm_slot].status != SLOT_RESERVED)
-                    {
-                        free_slot(qvfilm_slot);
-                    }
-                }
-                writing_queue_head = writing_queue_tail;
-                qvfilm_lossless_diag_status = QVFIL_LD_QUEUE_MISMATCH;
-                qvfilm_lossless_diag_reboot_required = 1;
-            }
-        }
-    }'''
+        '    msg_queue_post(compress_mq, INT_MIN);\n'
+        '\n'
+        '    set_recording_custom(CUSTOM_RECORDING_NOT_RECORDING);',
+        '    msg_queue_post(compress_mq, INT_MIN);\n\n'
+        '    if (qvfilm_lossless_diag_queue_started)\n'
+        '    {\n'
+        '        uint32_t qvfilm_drain_t0 = get_ms_clock();\n'
+        '        while (!qvfilm_lossless_diag_drain_ack &&\n'
+        '               (uint32_t)(get_ms_clock() - qvfilm_drain_t0) < 5000)\n'
+        '        {\n'
+        '            msleep(10);\n'
+        '        }\n\n'
+        '        if (!qvfilm_lossless_diag_drain_ack)\n'
+        '        {\n'
+        '            qvfilm_lossless_diag_drain_timeout = 1;\n'
+        '            qvfilm_lossless_diag_reboot_required = 1;\n'
+        '            qvfilm_lossless_diag_status = QVFIL_LD_DRAIN_TIMEOUT;\n'
+        '            qvfilm_lossless_diag_active = 0;\n'
+        '            printf("QVFIL LOSSLESS DIAG: queue drain timeout; buffers retained until reboot.\\n");\n'
+        '        }\n'
+        '        else if (qvfilm_lossless_diag_fault)\n'
+        '        {\n'
+        '            int qvfilm_tail_before = writing_queue_tail;\n'
+        '            int qvfilm_failed_pos = writing_queue_head;\n'
+        '            while (qvfilm_failed_pos != qvfilm_tail_before &&\n'
+        '                   writing_queue[qvfilm_failed_pos] != qvfilm_lossless_diag_failed_slot)\n'
+        '            {\n'
+        '                INC_MOD(qvfilm_failed_pos, COUNT(writing_queue));\n'
+        '            }\n\n'
+        '            if (qvfilm_failed_pos != qvfilm_tail_before)\n'
+        '            {\n'
+        '                int qvfilm_i = qvfilm_failed_pos;\n'
+        '                while (qvfilm_i != qvfilm_tail_before)\n'
+        '                {\n'
+        '                    int qvfilm_slot = writing_queue[qvfilm_i];\n'
+        '                    if (qvfilm_slot >= 0 && qvfilm_slot < COUNT(slots) &&\n'
+        '                        slots[qvfilm_slot].status != SLOT_FREE &&\n'
+        '                        slots[qvfilm_slot].status != SLOT_RESERVED)\n'
+        '                    {\n'
+        '                        free_slot(qvfilm_slot);\n'
+        '                    }\n'
+        '                    INC_MOD(qvfilm_i, COUNT(writing_queue));\n'
+        '                }\n'
+        '                writing_queue_tail = qvfilm_failed_pos;\n'
+        '            }\n'
+        '            else\n'
+        '            {\n'
+        '                for (int qvfilm_i = writing_queue_head;\n'
+        '                     qvfilm_i != qvfilm_tail_before;\n'
+        '                     INC_MOD(qvfilm_i, COUNT(writing_queue)))\n'
+        '                {\n'
+        '                    int qvfilm_slot = writing_queue[qvfilm_i];\n'
+        '                    if (qvfilm_slot >= 0 && qvfilm_slot < COUNT(slots) &&\n'
+        '                        slots[qvfilm_slot].status != SLOT_FREE &&\n'
+        '                        slots[qvfilm_slot].status != SLOT_RESERVED)\n'
+        '                    {\n'
+        '                        free_slot(qvfilm_slot);\n'
+        '                    }\n'
+        '                }\n'
+        '                writing_queue_head = writing_queue_tail;\n'
+        '                qvfilm_lossless_diag_status = QVFIL_LD_QUEUE_MISMATCH;\n'
+        '                qvfilm_lossless_diag_reboot_required = 1;\n'
+        '            }\n'
+        '        }\n'
+        '    }\n\n'
+        '    set_recording_custom(CUSTOM_RECORDING_NOT_RECORDING);'
     )
 
     # If drain was not confirmed, skip queued frame writes; never free buffers
