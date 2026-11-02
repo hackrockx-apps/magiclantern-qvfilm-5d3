@@ -99,21 +99,17 @@ static const char *qvfilm_lossless_diag_reason_text(int reason)
     }
 }
 """
-    source = replace_once(
-        source,
-        'void raw_video_rec_task()\n{\n'
-        '    /* QVFIL guard: do not feed known-failing lossless to the encoder.\n'
-        '     * This is a CONTAINMENT measure, not a repair of lossless compression.\n'
-        '     * 14-bit uncompressed remains available for a fast enough card.\n'
-        '     * Restrict to verified 5D3.123, leave other cameras unchanged. */\n'
-        '    if (is_camera("5D3", "*") && OUTPUT_COMPRESSION)\n'
-        '    {\n'
-        '        printf("QVFIL: Lossless RAW blocked on 5D3.123 (known mlv_lite ASSERT).\\n");\n'
-        '        NotifyBox(6000, "QVFIL: Lossless blocked. Use RAW uncompressed.");\n'
-        '        return;\n'
-        '    }\n'
-        '    //~ console_show();',
-        preflight + r'''
+    guard_start = source.find('void raw_video_rec_task()\n{')
+    guard_marker = '    //~ console_show();'
+    if guard_start < 0 or source.count('void raw_video_rec_task()\n{') != 1:
+        raise ValueError("Expected exactly one upstream raw_video_rec_task entry")
+    guard_end = source.find(guard_marker, guard_start)
+    if guard_end < 0:
+        raise ValueError("raw_video_rec_task console_show anchor missing")
+    guard_prefix = source[guard_start:guard_end]
+    if "QVFIL: Lossless RAW blocked on 5D3.123" not in guard_prefix:
+        raise ValueError("The v0.6.6 5D3 lossless containment guard was not found")
+    replacement = preflight + r'''
 void raw_video_rec_task()
 {
     /* A timed-out compressor may still own the buffers. Never start another
@@ -171,7 +167,7 @@ void raw_video_rec_task()
     }
 
     //~ console_show();'''
-    )
+    source = source[:guard_start] + replacement + source[guard_end + len(guard_marker):]
 
     # Central failure handler: free the failed capture slot, latch the abort,
     # and stop future VSYNC capture. It never promotes an invalid frame to FULL.
