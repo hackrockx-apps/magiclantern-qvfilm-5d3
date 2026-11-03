@@ -41,7 +41,13 @@ class ColorPerfV0618(unittest.TestCase):
             a=src.index(start)
             b=src.index(finish,a)+len(finish)
             return src[a:b]
-        self.assertEqual(body(self.before),body(self.after))
+        # The display filter is intentionally instrumented *after* the
+        # existing conversion. Normalize only that exact telemetry block,
+        # proving every other byte of the preview path is unchanged.
+        patched = body(self.after)
+        self.assertIn(current.NEW_COUNT, patched)
+        self.assertEqual(body(self.before),
+                         patched.replace(current.NEW_COUNT, current.OLD_COUNT))
 
     def test_rom_and_stby_guards_strict(self):
         for t in (
