@@ -79,11 +79,13 @@ class PreviewTelemetryV0612(unittest.TestCase):
         self.assertIn("static int qvfilm_preview_lab = 0;",src)
         self.assertIn("static volatile unsigned int qvfilm_preview_lab_draw_count = 0;",src)
         self.assertNotIn("MODULE_CONFIG(qvfilm_preview_lab)",src)
+        self.assertIn('MENU_SET_NAME("QVFIL Color Lab");',src)
+        self.assertIn('.choices = CHOICES("OFF", "Color STBY")',src)
         for item in ('is_camera("5D3", "1.2.3")','RAW_IS_IDLE',
                      'lv_dispsize == 1','BPP == 10',
                      'raw_info.bits_per_pixel == 14',
                      'if (is_camera("5D3", "*") && OUTPUT_COMPRESSION)',
-                     '.name = "QVFIL Color Preview Lab"',
+                     '.name = "QVFIL Color Lab"',
                      '.name = "QVFIL Preview Guide"',
                      '.name = "QVFIL Lossless Diag"',
                      'MENU_SET_RINFO("QVFIL v0.6.12")'):
