@@ -2,6 +2,7 @@
 """Pin and compare QVFIL v0.6.9 to v0.6.8; no capture/preview changes."""
 from pathlib import Path
 import sys
+import re
 import unittest
 
 HERE = Path(__file__).resolve().parent
@@ -55,8 +56,9 @@ class PreviewGuideV069(unittest.TestCase):
             "framing inaccurate",
         ):
             self.assertIn(token, s)
+        self.assertIsNone(re.search(r"\bpreview_mode\s*=(?!=)", s))
         for forbidden in (
-            "preview_mode =", "raw_rec_update_preview(",
+            "raw_rec_update_preview(",
             "raw_preview_fast_ex(", "raw_video_rec_task(",
             "FIO_", "BMP_LOCK(", "bmp_printf(",
             "get_free_slot", "set_raw",
