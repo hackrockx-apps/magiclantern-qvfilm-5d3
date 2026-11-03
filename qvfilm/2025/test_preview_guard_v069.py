@@ -42,8 +42,8 @@ class PreviewGuideV069(unittest.TestCase):
         # QVFIL prepends menu callbacks before core info_items[]; isolate
         # only the original preview function, not the downstream menu.
         def body(src):
-            start = src.index("unsigned int raw_rec_update_preview(unsigned int ctx)\\n{")
-            tail = "    preview_dirty = 1;\\n    return 1;\\n}"
+            start = src.index("unsigned int raw_rec_update_preview(unsigned int ctx)\n{")
+            tail = "    preview_dirty = 1;\n    return 1;\n}"
             stop = src.index(tail, start) + len(tail)
             return src[start:stop]
         self.assertEqual(body(self.old), body(self.new))
