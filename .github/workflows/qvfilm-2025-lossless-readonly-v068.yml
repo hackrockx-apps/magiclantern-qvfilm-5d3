@@ -1,0 +1,120 @@
+name: QVFIL v0.6.8 — read-only lossless diagnostics (EXPERIMENTAL)
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.6.8-lossless-readonly-diag
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qvfil-2025-source-patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout QVFilm fork (patches only)
+        uses: actions/checkout@v4
+      - name: Install ARM build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            make gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-dev libnewlib-arm-none-eabi \
+            gcc g++ libc6-dev mercurial python3 python3-docutils perl
+      - name: Fetch exact installed Magic Lantern 2025 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/reticulatedpines/magiclantern_simplified.git upstream-2025
+          git -C upstream-2025 checkout --detach ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          test "$(git -C upstream-2025 rev-parse HEAD)" = "ed3e7c0dfacfdeaf3349dee73edf9e3621217462"
+      - name: Verify patch behavior on exact original
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+             qvfilm/2025/fixture-2025-mlv_lite.c
+          for t in qvfilm/2025/test_*.py; do
+            case "$t" in
+              *test_lossless14_static_v067.py) continue ;;
+            esac
+            echo "RUN $t"
+            python3 "$t"
+          done
+          python3 qvfilm/2025/test_lossless14_static_v067.py \
+            --mlv-lite upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+            --lossless upstream-2025/modules/silent/lossless.c \
+            --qvfilm-patch qvfilm/2025/apply_qvfilm_patch.py
+          rm qvfilm/2025/fixture-2025-mlv_lite.c
+      - name: Apply strictly-anchored QVFilm patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/2025/apply_lossless_readonly_v068.py --checkout upstream-2025
+          git -C upstream-2025 diff --check
+          test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
+          git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
+            > qvfilm-2025.diff
+          echo "Expected source diff:"
+          git -C upstream-2025 diff --stat
+      - name: Build 5D3.123 core of EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/platform/5D3.123 PYTHON=python3 \
+            2>&1 | tee qvfilm-core-build.log
+      - name: Build QVFil patched MLV Lite from EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/modules/raw_video/mlv_lite PYTHON=python3 \
+            2>&1 | tee qvfilm-module-build.log
+      - name: Fingerprint experimental module (review build only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=upstream-2025/modules/raw_video/mlv_lite/build/mlv_lite.mo
+          test -s "$FILE"
+          arm-none-eabi-readelf -h "$FILE" | grep -E 'Machine:.*ARM'
+          mkdir -p qvfilm-experimental-review
+          cp "$FILE" qvfilm-experimental-review/MLV_LITE.MO
+          sha256sum qvfilm-experimental-review/MLV_LITE.MO > qvfilm-experimental-review/SHA256SUMS.txt
+          cat > qvfilm-experimental-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
+          QVFilm v0.6.8 READONLY Lossless Diagnostic - 5D3.123 / ML 2025-06-20
+          Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          EXPERIMENTAL READ-ONLY DIAGNOSTIC: NOT VERIFIED ON A CAMERA.
+          DOES NOT INSTRUMENT THE HARDWARE LOSSLESS ENCODER.
+          Lossless RAW recording is deliberately blocked for 5D3.123 to avoid
+          the previously observed mlv_lite lossless ASSERT. This is not a
+          working 14-bit lossless compression fix.
+          Menu-only: QVFIL Lossless Diag and historical error guide.
+          These menus DO NOT capture any live compressor error code.
+          14-bit lossless remains intentionally BLOCKED and is not fixed.
+          RAW recorder, compression task, buffer/CF paths unchanged.
+          Native ML peaking and Cinema slim preserved; no overclock or bypass.
+          Use a separate, fully-backed-up camera test card only after verifying
+          source, checksums and recovery instructions. NEVER flash Canon firmware.
+          Do not overwrite your known-good original Magic Lantern SD card.
+          TXT
+      - name: Publish EXPERIMENTAL module only after successful build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.8_READONLY_DIAG_5D3_123_NOT_HARDWARE_TESTED
+          path: qvfilm-experimental-review/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Archive source diff and compile logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.8_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
+          path: |
+            qvfilm-2025.diff
+            qvfilm-core-build.log
+            qvfilm-module-build.log
+          if-no-files-found: ignore
+          retention-days: 30
