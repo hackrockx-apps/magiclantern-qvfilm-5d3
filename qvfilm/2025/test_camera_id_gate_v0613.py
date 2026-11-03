@@ -50,7 +50,9 @@ class CameraIDGateTests(unittest.TestCase):
             s)
         self.assertIn("#define QVFIL_LAB_STBY (qvfilm_preview_lab && QVFIL_LAB_CAMERA_OK",s)
         self.assertIn('cam_5d3_123 = is_camera("5D3",  "1.2.3");',s)
-        self.assertNotIn('is_camera("5D3", "*"))',s)
+        guard = self.between(s, "#define QVFIL_LAB_CAMERA_OK",
+                             "static int raw_rec_should_preview(void)")
+        self.assertNotIn('is_camera("5D3", "*")', guard)
         for expected in ('raw_video_enabled && lv','is_movie_mode() && RAW_IS_IDLE',
                          'lv_dispsize == 1', 'res_x <= 1600', 'res_y <= 900',
                          'BPP == 10', 'raw_info.bits_per_pixel == 14'):
