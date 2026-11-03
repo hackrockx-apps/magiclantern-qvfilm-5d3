@@ -1,0 +1,118 @@
+name: QVFIL v0.6.14 — read-only camera identity probe (EXPERIMENTAL)
+
+on:
+  push:
+    branches:
+      - qvfilm/v0.6.14-camera-id-readonly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qvfil-2025-source-patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout QVFilm fork (patches only)
+        uses: actions/checkout@v4
+      - name: Install ARM build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            make gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-dev libnewlib-arm-none-eabi \
+            gcc g++ libc6-dev mercurial python3 python3-docutils perl
+      - name: Fetch exact installed Magic Lantern 2025 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/reticulatedpines/magiclantern_simplified.git upstream-2025
+          git -C upstream-2025 checkout --detach ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          test "$(git -C upstream-2025 rev-parse HEAD)" = "ed3e7c0dfacfdeaf3349dee73edf9e3621217462"
+      - name: Verify all source regressions on exact original
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+             qvfilm/2025/fixture-2025-mlv_lite.c
+          for t in qvfilm/2025/test_*.py; do
+            case "$t" in
+              *test_lossless14_static_v067.py) continue ;;
+            esac
+            echo "RUN $t"
+            python3 "$t"
+          done
+          python3 qvfilm/2025/test_lossless14_static_v067.py \
+            --mlv-lite upstream-2025/modules/raw_video/mlv_lite/mlv_lite.c \
+            --lossless upstream-2025/modules/silent/lossless.c \
+            --qvfilm-patch qvfilm/2025/apply_qvfilm_patch.py
+          rm qvfilm/2025/fixture-2025-mlv_lite.c
+      - name: Apply strictly-anchored QVFIL v0.6.14 source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/2025/apply_camera_id_probe_v0614.py --checkout upstream-2025
+          git -C upstream-2025 diff --check
+          test "$(git -C upstream-2025 diff --name-only)" = "modules/raw_video/mlv_lite/mlv_lite.c"
+          git -C upstream-2025 diff -- modules/raw_video/mlv_lite/mlv_lite.c \
+            > qvfilm-2025.diff
+          echo "Expected source diff:"
+          git -C upstream-2025 diff --stat
+      - name: Build 5D3.123 core of EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/platform/5D3.123 PYTHON=python3 \
+            2>&1 | tee qvfilm-core-build.log
+      - name: Build QVFIL patched MLV Lite from EXACT 2025 tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C upstream-2025/modules/raw_video/mlv_lite PYTHON=python3 \
+            2>&1 | tee qvfilm-module-build.log
+      - name: Fingerprint review module (not hardware tested)
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=upstream-2025/modules/raw_video/mlv_lite/build/mlv_lite.mo
+          test -s "$FILE"
+          arm-none-eabi-readelf -h "$FILE" | grep -E 'Machine:.*ARM'
+          mkdir -p qvfil-review
+          cp "$FILE" qvfil-review/MLV_LITE.MO
+          sha256sum qvfil-review/MLV_LITE.MO > qvfil-review/SHA256SUMS.txt
+          cat > qvfil-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
+          QVFIL v0.6.14 STBY COLOR PREVIEW GATE FIX - 5D3.123
+          Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
+          EXPERIMENTAL REVIEW MODULE. NOT VERIFIED ON A CAMERA.
+          Adds read-only camera model and firmware property probe. Retains
+          strict v0.6.13 5D3.123/DIGIC 5 guard and frame telemetry.
+          Keeps 5D3.123, Movie LiveView, RAW ON, recorder IDLE, 1x,
+          10-bit uncompressed, native 14-bit sensor RAW and <=1600x900 guards.
+          Existing RAW color-half-resolution preview renderer remains in use.
+          No guarantee of 25fps or full-resolution color.
+          RAW recorder, compressor, queues, EDMAC and FIO/card writing unchanged.
+          Lossless RAW remains blocked for 5D3.123.
+          No firmware flashing. Do not overwrite the known-good card.
+          Test only on a separate backed-up TEST card after reviewing checksums.
+          TXT
+      - name: Publish review module only after successful build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.14_IDENTITY_PROBE_5D3_123_UNTESTED
+          path: qvfil-review/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Archive source diff and compile logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_v0.6.14_SOURCE_DIFF_AND_COMPILE_LOGS_NO_CAMERA_BINARY
+          path: |
+            qvfilm-2025.diff
+            qvfilm-core-build.log
+            qvfilm-module-build.log
+          if-no-files-found: ignore
+          retention-days: 30
