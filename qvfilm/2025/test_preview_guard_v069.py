@@ -39,9 +39,14 @@ class PreviewGuideV069(unittest.TestCase):
             "static REQUIRES(LiveViewTask) FAST\nvoid process_frame(")
 
     def test_upstream_preview_renderer_byte_identical(self):
-        self.assert_unchanged_region(
-            "unsigned int raw_rec_update_preview(unsigned int ctx)",
-            "static struct lvinfo_item info_items[]")
+        # QVFIL prepends menu callbacks before core info_items[]; isolate
+        # only the original preview function, not the downstream menu.
+        def body(src):
+            start = src.index("unsigned int raw_rec_update_preview(unsigned int ctx)\\n{".replace("\\\\n", "\\n"))
+            tail = "    preview_dirty = 1;\\n    return 1;\\n}".replace("\\\\n", "\\n")
+            stop = src.index(tail, start) + len(tail)
+            return src[start:stop]
+        self.assertEqual(body(self.old), body(self.new))
 
     def test_preview_guide_never_mutates_preview_or_raw_state(self):
         a = self.new.index("static MENU_UPDATE_FUNC(qvfilm_preview_guide_update)")
