@@ -81,9 +81,9 @@ jobs:
           arm-none-eabi-readelf -h "$FILE" | grep -E 'Machine:.*ARM'
           mkdir -p qvfil-review
           cp "$FILE" qvfil-review/MLV_LITE.MO
-          sha256sum qvfil-review/MLV_LITE.MO > qvfil-review/SHA256SUMS.txt
+          ( cd qvfil-review && sha256sum MLV_LITE.MO > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt )
           cat > qvfil-review/README_NOT_HARDWARE_TESTED.txt <<'TXT'
-          QVFIL v0.6.14 STBY COLOR PREVIEW GATE FIX - 5D3.123
+          QVFIL v0.6.14 READ-ONLY CAMERA MODEL/FIRMWARE PROBE - 5D3.123
           Source pin: ed3e7c0dfacfdeaf3349dee73edf9e3621217462
           EXPERIMENTAL REVIEW MODULE. NOT VERIFIED ON A CAMERA.
           Adds read-only camera model and firmware property probe. Retains
