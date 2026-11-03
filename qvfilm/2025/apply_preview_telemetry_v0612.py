@@ -77,6 +77,23 @@ def patch(source):
         }
     }'''
     )
+    # Avoid the Movie-menu collision visible in the operator screenshot.
+    # Only presentation labels change; not the 0/1 option values.
+    source = replace_once(
+        source,
+        '.name = "QVFIL Color Preview Lab",',
+        '.name = "QVFIL Color Lab",'
+    )
+    source = replace_once(
+        source,
+        'MENU_SET_NAME("QVFIL Color Preview Lab");',
+        'MENU_SET_NAME("QVFIL Color Lab");'
+    )
+    source = replace_once(
+        source,
+        '.choices = CHOICES("OFF", "Color large STBY"),',
+        '.choices = CHOICES("OFF", "Color STBY"),'
+    )
     source = replace_once(
         source, 'MENU_SET_RINFO("QVFIL v0.6.11")',
         'MENU_SET_RINFO("QVFIL v0.6.12")'
