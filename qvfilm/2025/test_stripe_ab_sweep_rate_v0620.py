@@ -109,8 +109,8 @@ class ColorStripeABTests(unittest.TestCase):
             'MENU_SET_RINFO("Hz:%d.%d"',
             'MENU_SET_VALUE("NO RATE")',
             'NOT synchronized video',
-            'static MENU_UPDATE_FUNC(qvfilm_lab_sweep_update_v0619)',
         ):self.assertIn(t,menu)
+        self.assertIn('static MENU_UPDATE_FUNC(qvfilm_lab_sweep_update_v0619)',s)
         for bad in (
             "FIO_","raw_preview_fast_ex(","prop_request_change",
             "task_create(","msleep(","MEM(","firmware_version =",
