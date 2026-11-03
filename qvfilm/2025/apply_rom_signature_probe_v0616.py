@@ -38,6 +38,15 @@ static MENU_UPDATE_FUNC(qvfilm_rom_sig_update_v0616)
         return;
     }
 
+    /* Avoid scanning while merely scrolling through Movie options.
+     * The probe runs only when this exact menu entry is highlighted. */
+    if (!entry->selected && !qvfilm_rom_sig_done_v0616)
+    {
+        MENU_SET_VALUE("SELECT ME");
+        MENU_SET_RINFO("NO SCAN");
+        return;
+    }
+
     if (!qvfilm_rom_sig_done_v0616)
     {
         const volatile unsigned int *p =
