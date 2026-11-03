@@ -57,3 +57,33 @@ Chỉ khi GitHub CI **PASS** và artifact MLV_LITE.MO có checksum:
 - `LOSSLESS14_BLOCKED`
 
 **Không phát hành bản này như một bản vá 14-bit Lossless.**
+
+
+## Cảnh báo nghiệm thu trên máy — 03/11/2026: LIVEVIEW HOLD
+
+Bản v0.6.8 đã được người dùng thử trên Canon EOS 5D Mark III firmware 1.2.3.
+
+**Kết quả từng phần:**
+- `Movie → QVFIL Lossless Diag`: hiển thị `LJ OFF`, 10-bit 1920×1080 — **UI PASS**.
+- `Movie → QVFIL LJ Error Guide`: hiển thị `HIST: ?` — **UI PASS** (không phải lỗi compression mới).
+- `Cinema slim` và Focus Peak đã có mặt.
+- **LiveView NOT PASS:** người dùng quan sát hình gần trắng đen/ám xanh tím và cập nhật rất chậm. Ảnh điện thoại có histogram nhiều màu và một số điểm đỏ, chưa chứng minh file RAW mất màu.
+- Người dùng quay 5–10 giây được nhưng **chưa cung cấp tệp .MLV** để chứng minh màu thực tế và số khung hình.
+
+**Quan sát phụ:** HUD ghi `ISO220` trong khi thanh thông số gốc Magic Lantern/Canon phía dưới hiển thị `ISO A400D+`. Cần kiểm tra cách đọc Auto ISO từ `lens_info.iso` / `lens_info.iso_auto`; không được xem đây là số ISO đã đúng.
+
+**Kết quả rà soát nguồn (upstream 2025 đã pin):**
+- `RAW video → Preview` có `Auto / Real-time / Framing / Frozen LV`. `Framing` ghi rõ low-res, slow, not real-time. `Real-time` là LiveView màu, có thể framing không chuẩn ở một số chế độ.
+- `raw_rec_update_preview` có nhánh `RAW_PREVIEW_GRAY_ULTRA_FAST` khi hàng đợi ghi lớn và khoảng ngủ preview 500/1000 ms để ưu tiên ghi; chưa biết có thực sự rơi vào nhánh này ở lần thử hay không.
+- Patch v0.6.8 chỉ thêm các callback menu, không đổi `raw_rec_update_preview`, `compress_task` hoặc `raw_video_rec_task` theo kiểm tra mã nguồn. Chưa thể xác định đây là bug code v0.6.8 hay do cấu hình Preview/mode khác biệt.
+
+**Quy trình đối chứng ngay, chỉ STBY, chưa quay thử tiếp:**
+1. Giữ nguyên bản ghi và thẻ v0.6.8 làm bằng chứng, không flash/format.
+2. Vào `Movie → RAW video → Preview` (mở submenu bằng SET/Q tùy giao diện) và chụp ảnh giá trị đang chọn.
+3. Nếu đang chọn `Framing` hoặc `Frozen LV`, thử đổi sang `Real-time` chỉ trong STBY và kiểm tra tốc độ, màu. `Real-time` có thể framing sai ở crop/high-res, do đó không tự xem là phương án quay production. Có thể trở về `Auto` sau bài kiểm tra.
+4. Nếu vẫn lỗi, tắt Focus Peak, rồi HUD (mỗi lần chỉ đổi một mục), kiểm tra không REC.
+5. Trở về **thẻ boot v0.6.6 đã USER PASS** để so sánh cùng thông số. Không ghi đè thẻ v0.6.6.
+6. Mở lại file .MLV đã ghi 5–10 giây trong MLV App để xác định màu dữ liệu, không suy diễn từ LCD.
+7. Giữ `LOSSLESS14_BLOCKED` và không thử 3K. Không phát hành v0.6.8 làm bản stable khi LiveView chưa đạt.
+
+**Hiện trạng:** `V068_DIAG_UI_USER_PASS` / `V068_LIVEVIEW_COLOR_PERFORMANCE_HOLD` / `V068_REAL_CAPTURE_COLOR_NOT_YET_VERIFIED` / `V066_LAST_KNOWN_GOOD` / `LOSSLESS14_BLOCKED`.
