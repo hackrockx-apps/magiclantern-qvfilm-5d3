@@ -23,8 +23,10 @@ class PreviewGuideV069(unittest.TestCase):
 
     def assert_unchanged_region(self, begin, end):
         def get(src):
-            a = src.index(begin)
-            b = src.index(end, a)
+            b = src.index(end)
+            # Upstream declares raw_rec_update_preview before its definition.
+            # Take the LAST matching function signature before this end.
+            a = src.rindex(begin, 0, b)
             return src[a:b]
         self.assertEqual(get(self.old), get(self.new))
 
