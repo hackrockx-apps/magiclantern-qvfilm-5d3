@@ -47,11 +47,11 @@ class PreviewTelemetryV0612(unittest.TestCase):
                         span.index("qvfilm_preview_lab_draw_count++;"))
         # Only the counter block is new within the display callback.
         old=self.block(self.before,
-              "unsigned int raw_rec_update_preview(unsigned int ctx)\n{",
-              "static struct lvinfo_item info_items[]")
+              "    int qvfilm_lab_start_ms = qvfilm_lab_active ? get_ms_clock() : 0;",
+              "    give_semaphore(settings_sem);")
         new=self.block(self.after,
-              "unsigned int raw_rec_update_preview(unsigned int ctx)\n{",
-              "static struct lvinfo_item info_items[]")
+              "    int qvfilm_lab_start_ms = qvfilm_lab_active ? get_ms_clock() : 0;",
+              "    give_semaphore(settings_sem);")
         injection_before="""    if (qvfilm_lab_active)
         qvfilm_preview_lab_last_draw_ms = qvfilm_lab_draw_ms;"""
         injection_after="""    if (qvfilm_lab_active)
