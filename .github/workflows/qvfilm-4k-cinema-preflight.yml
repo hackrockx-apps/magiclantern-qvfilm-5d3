@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - qvfilm/4k-cinema-integration
+      - qvfilm/4k-hud-integration
   workflow_dispatch:
 
 permissions:
@@ -37,6 +38,8 @@ jobs:
           grep -q 'raw_preview_fast_ex2' modules/mlv_lite/mlv_lite.c
           grep -q 'FRAMED_PREVIEW_PARAM__ENGINE__ULTRAFAST' src/raw.c
           grep -q 'raw_preview_fast_ex2' src/raw.c
+          grep -q 'qvfilm_4k_ui.inc' modules/mlv_lite/mlv_lite.c
+          grep -q 'static int qvfilm_4k_hud_mode = 0;' modules/mlv_lite/qvfilm_4k_ui.inc
           grep -q 'cached ultrafast preview' src/raw.c
           grep -q 'card_spanning' modules/mlv_lite/mlv_lite.c
           echo 'PASS: crop sensor modes + MLV Lite + cached preview live in ONE source tree'
