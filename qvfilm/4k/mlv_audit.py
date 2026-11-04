@@ -48,11 +48,11 @@ def inspect_one(path):
                 name=kind.decode("ascii",errors="replace")
                 summary["unknown_types"][name]=summary["unknown_types"].get(name,0)+1
             if kind==b"MLVI":
-                if length<52:
+                if length<60:
                     summary["errors"].append(f"MLVI header too short ({length})")
                 else:
                     f.seek(offset+16)
-                    b=f.read(36)
+                    b=f.read(44)
                     # MLVI v2: versionString[8], fileGuid[8], fileNum/count,
                     # flags[4], video/audioClass[2 each], frameCount [4 each],
                     # sourceFpsNom/Denom [4 each].
@@ -72,12 +72,12 @@ def inspect_one(path):
                     w,h=struct.unpack("<HH",f.read(4))
                     summary["raw_dimensions"].append([w,h])
             elif kind==b"VIDF":
-                if length>=36:
+                if length>=32:
                     f.seek(offset+16)
                     number,cx,cy,px,py,pad=struct.unpack("<IHHHHI",f.read(16))
                     summary["frame_numbers"].append(number)
                     summary["video_timestamps_us"].append(stamp)
-                    if pad>length-36:
+                    if pad>length-32:
                         summary["errors"].append(
                             f"VIDF frame {number}: frameSpace {pad} exceeds payload at byte {offset}")
                 else:
