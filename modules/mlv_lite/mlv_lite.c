@@ -141,7 +141,7 @@ extern int WEAK_FUNC(crop_presets) crop_preset_index;
 static int isoau = 0; /* coming from crop_rec.c */
 extern int WEAK_FUNC(isoau) isoauto;
 
-CONFIG_INT("raw.video.enabled", raw_video_enabled, 1);
+CONFIG_INT("raw.video.enabled", raw_video_enabled, 0);
 static CONFIG_INT("raw.killgd", kill_gd, 0);
 
 /* Card spanning */
@@ -192,13 +192,13 @@ static CONFIG_INT("raw.framed-preview-statistics", framed_preview_statistics, FR
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
 static CONFIG_INT("raw.small.hacks", small_hacks, 1);
-static CONFIG_INT("raw.more.hacks", more_hacks, 1);
+static CONFIG_INT("raw.more.hacks", more_hacks, 0);
 static CONFIG_INT("raw.one.more.hack", one_more_hack, 0);
 
 static CONFIG_INT("raw.h264.proxy", h264_proxy_menu, 0);
 static CONFIG_INT("raw.sync_beep", sync_beep, 1);
 
-static CONFIG_INT("raw.output_format", output_format, 3);
+static CONFIG_INT("raw.output_format", output_format, 2);
 #define OUTPUT_14BIT_NATIVE 0
 #define OUTPUT_12BIT_UNCOMPRESSED 1
 #define OUTPUT_10BIT_UNCOMPRESSED 2
