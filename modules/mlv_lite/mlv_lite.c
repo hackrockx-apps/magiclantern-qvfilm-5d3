@@ -2045,6 +2045,9 @@ void show_recording_status()
     }
 }
 
+/* Ported QVFIL Cinema HUD — display/menu only, no capture-path writes. */
+#include "qvfilm_4k_ui.inc"
+
 static REQUIRES(ShootTask) EXCLUDES(settings_sem)
 unsigned int raw_rec_polling_cbr(unsigned int unused)
 {
@@ -2113,6 +2116,8 @@ unsigned int raw_rec_polling_cbr(unsigned int unused)
     
     /* update status messages */
     show_recording_status();
+    /* QVFIL draws read-only at low rate; no EDMAC or preview changes. */
+    qvfilm_4k_draw_hud();
 
     return 0;
 }
@@ -4701,6 +4706,7 @@ static unsigned int raw_rec_init()
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
+    qvfilm_register_menu(); /* 5D3.123 only; legacy Movie menu stays */
 
     /* hack: force proper alignment in menu */
     raw_video_menu->children->parent_menu->split_pos = 15;
