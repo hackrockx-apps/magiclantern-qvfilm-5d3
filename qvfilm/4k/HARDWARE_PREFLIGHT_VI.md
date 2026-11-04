@@ -15,7 +15,8 @@ Tài liệu này là quy trình giảm rủi ro, không phải giấy chứng nh
 - **Mới**: tắt thêm `raw.small.hacks`, `raw.use.srm.memory`, `raw.CropRecPreview` mặc định.
 - Cố định 10-bit uncompressed làm định dạng mặc định, nhưng chỉ dùng khi lưu lượng phù hợp.
 - Test tự động kiểm tra lại tất cả các giá trị này và packaging fail-closed khi anchor không khớp.
-- **Rủi ro còn tồn tại:** bật `MLV_LITE.MO` vẫn khởi tạo `lossless_init()` và task `compress_task` ngay lúc nạp module. Không có bằng chứng an toàn hardware. Bản này **không** sửa logic task nén hoặc các thanh ghi cảm biến.
+- **Gia cố mới ở lõi module:** xóa `mlv_lite` và `crop_rec` khỏi danh sách `core_modules` tự nạp. Với `ML/SETTINGS` sạch và không có file `.en`, 2 module sẽ **không tự nạp ở boot đầu tiên**. Chỉ được bật thủ công sau khi boot-only PASS.
+- **Rủi ro còn tồn tại:** bật `MLV_LITE.MO` vẫn khởi tạo `lossless_init()` và task `compress_task` ngay lúc nạp module. Không có bằng chứng an toàn hardware. **Không được đổi lại `core_modules` hoặc copy `.en`/`.cfg` từ bản ML 2025 sang pilot.** Bản này **không** sửa logic task nén hoặc các thanh ghi cảm biến.
 
 ## Cổng H0 — điều kiện bắt buộc trước khi THỬ BOOT
 - [ ] GitHub Actions của **commit mới nhất** SUCCESS toàn bộ core 5D3.123 + MLV Lite + Crop REC + unit tests; tải **bản ZIP mới nhất**, không dùng ZIP từ commit cũ.
