@@ -26,7 +26,7 @@ static int is_digic5 = 0;
 static int is_5D3 = 0;
 
 //Not static so we can get info in mlv_lite regarding crop rec on or off
-CONFIG_INT("crop.preset", crop_preset_index, 1);
+CONFIG_INT("crop.preset", crop_preset_index, 0);
 static CONFIG_INT("crop.shutter_range", shutter_range, 0);
 static CONFIG_INT("crop.ratios", ratios, 1);
 static CONFIG_INT("crop.x3crop", x3crop, 0);
