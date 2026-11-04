@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CROP = (ROOT / "modules/crop_rec/crop_rec.c").read_text(encoding="utf-8")
 RAW = (ROOT / "modules/mlv_lite/mlv_lite.c").read_text(encoding="utf-8")
 PACK = (ROOT / "qvfilm/4k/package_test_card.py").read_text(encoding="utf-8")
+MODULE_CORE = (ROOT / "src/module.c").read_text(encoding="utf-8")
 
 class FirstBootSafetyGates(unittest.TestCase):
     def test_crop_is_off_by_default(self):
@@ -28,6 +29,14 @@ class FirstBootSafetyGates(unittest.TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertIn(anchor, RAW)
+
+    def test_capture_modules_not_automatic_core_modules(self):
+        # Fresh staging has no .en flags. This ensures neither module is
+        # auto-loaded on the very first boot.
+        expected = 'char *core_modules[] = {"mlv_play", "mlv_snd", "sd_uhs", "lua", "file_man", "dual_iso", "silent", "ettr", "focus_sq"};'
+        self.assertIn(expected, MODULE_CORE)
+        self.assertIn('if(!config_flag_file_setting_load(enable_file) && index_in_core_modules >= core_modules_count)', MODULE_CORE)
+        self.assertNotIn('char *core_modules[] = {"mlv_lite", "crop_rec"', MODULE_CORE)
 
     def test_no_legacy_binaries_in_packaging(self):
         self.assertIn('"camera_installation_approved":False', PACK)
