@@ -84,6 +84,30 @@ jobs:
             sha256sum "$f"
           done < qvfil-4k-module-paths.txt | tee qvfil-4k-checksums.txt
           echo 'SOURCE/ABI BUILD ONLY. NOT APPROVED TO INSTALL IN CAMERA.' > qvfil-4k-NOT-CAMERA-READY.txt
+      - name: Create isolated 5D3.123 pilot review archive (NOT approved to install)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/4k/package_test_card.py --out dist/qvfil-4k-review | tee qvfil-4k-package-report.json
+          test -s dist/qvfil-4k-review.zip
+          test -s dist/qvfil-4k-review/CARD_ROOT/autoexec.bin
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/MLV_LITE.MO
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/CROP_REC.MO
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/5D3_123.SYM
+          python3 - <<'PY'
+          import json, pathlib
+          p=json.loads(pathlib.Path("qvfil-4k-package-report.json").read_text())
+          assert p["hardware_tested"] is False
+          assert p["camera_installable_approval"] is False
+          print("Validated: same-source core+modules staged in explicit CARD_ROOT")
+          PY
+      - name: Upload review-only engineering package as separate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_4K_CINEMA_5D3_123_ENGINEERING_PILOT_UNTESTED
+          path: dist/qvfil-4k-review.zip
+          retention-days: 14
+          if-no-files-found: error
       - name: Archive proof of build WITHOUT deploying camera firmware
         if: always()
         uses: actions/upload-artifact@v4
@@ -96,6 +120,7 @@ jobs:
             qvfil-4k-mlv-build.log
             qvfil-4k-module-paths.txt
             qvfil-4k-checksums.txt
+            qvfil-4k-package-report.json
             qvfil-4k-NOT-CAMERA-READY.txt
           retention-days: 30
           if-no-files-found: ignore
