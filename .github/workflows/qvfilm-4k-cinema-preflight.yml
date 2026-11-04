@@ -61,16 +61,16 @@ jobs:
           python3 -m lib2to3 -w -n modules/checkdep.py > /tmp/qvfil-2to3.log 2>&1
           python3 -m py_compile modules/checkdep.py
           echo "PASS: converted Python2 dependency report script ONLY in CI workspace"
-      - name: Compile 4K crop_rec module of SAME tree
-        shell: bash
-        run: |
-          set -o pipefail
-          make -C modules/crop_rec PYTHON=python3 2>&1 | tee qvfil-4k-crop-build.log
-      - name: Compile MLV Lite with cached ultrafast preview of SAME tree
+      - name: Compile MLV Lite first (exports core-to-crop shutter helpers)
         shell: bash
         run: |
           set -o pipefail
           make -C modules/mlv_lite PYTHON=python3 2>&1 | tee qvfil-4k-mlv-build.log
+      - name: Compile crop_rec against MLV Lite exported functions
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C modules/crop_rec PYTHON=python3 2>&1 | tee qvfil-4k-crop-build.log
       - name: Fingerprint build products for engineering review ONLY
         shell: bash
         run: |
