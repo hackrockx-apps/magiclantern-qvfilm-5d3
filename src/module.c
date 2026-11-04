@@ -43,7 +43,11 @@ CONFIG_INT("module.console", module_console_enabled, 0);
 CONFIG_INT("module.ignore_crashes", module_ignore_crashes, 0);
 char *module_lockfile = MODULE_PATH"LOADING.LCK";
 
-char *core_modules[] = {"mlv_lite", "crop_rec", "mlv_play", "mlv_snd", "sd_uhs", "lua", "file_man", "dual_iso", "silent", "ettr", "focus_sq"};
+/* 4K engineering pilot: keep recorder/crop OPT-IN on a clean TEST card.
+ * Do not autoload mlv_lite or crop_rec on first boot; both touch low-level
+ * capture/recording paths, and mlv_lite creates compress_task at init.
+ * The operator can enable both from Modules only AFTER a clean boot. */
+char *core_modules[] = {"mlv_play", "mlv_snd", "sd_uhs", "lua", "file_man", "dual_iso", "silent", "ettr", "focus_sq"};
 
 static struct msg_queue * module_mq = 0;
 // #define MSG_MODULE_LOAD_ALL 1

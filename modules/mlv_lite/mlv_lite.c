@@ -141,7 +141,7 @@ extern int WEAK_FUNC(crop_presets) crop_preset_index;
 static int isoau = 0; /* coming from crop_rec.c */
 extern int WEAK_FUNC(isoau) isoauto;
 
-CONFIG_INT("raw.video.enabled", raw_video_enabled, 1);
+CONFIG_INT("raw.video.enabled", raw_video_enabled, 0);
 static CONFIG_INT("raw.killgd", kill_gd, 0);
 
 /* Card spanning */
@@ -173,7 +173,7 @@ static CONFIG_INT("raw.dolly", dolly_mode, 0);
 #define FRAMING_CENTER (dolly_mode == 0)
 #define FRAMING_PANNING (dolly_mode == 1)
 static CONFIG_INT("raw.movie_restart", movie_restart, 0);
-static CONFIG_INT("raw.CropRecPreview", prevmode, 1);
+static CONFIG_INT("raw.CropRecPreview", prevmode, 0);
 
 static CONFIG_INT("raw.preview", preview_mode, 2);
 #define PREVIEW_AUTO   (preview_mode == 0)
@@ -190,15 +190,15 @@ static CONFIG_INT("raw.framed-preview-timing", framed_preview_timing, FRAMED_PRE
 static CONFIG_INT("raw.framed-preview-statistics", framed_preview_statistics, FRAMED_PREVIEW_PARAM__STATISTICS_OFF);
 
 static CONFIG_INT("raw.warm.up", warm_up, 0);
-static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
-static CONFIG_INT("raw.small.hacks", small_hacks, 1);
-static CONFIG_INT("raw.more.hacks", more_hacks, 1);
+static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 0);
+static CONFIG_INT("raw.small.hacks", small_hacks, 0);
+static CONFIG_INT("raw.more.hacks", more_hacks, 0);
 static CONFIG_INT("raw.one.more.hack", one_more_hack, 0);
 
 static CONFIG_INT("raw.h264.proxy", h264_proxy_menu, 0);
 static CONFIG_INT("raw.sync_beep", sync_beep, 1);
 
-static CONFIG_INT("raw.output_format", output_format, 3);
+static CONFIG_INT("raw.output_format", output_format, 2);
 #define OUTPUT_14BIT_NATIVE 0
 #define OUTPUT_12BIT_UNCOMPRESSED 1
 #define OUTPUT_10BIT_UNCOMPRESSED 2

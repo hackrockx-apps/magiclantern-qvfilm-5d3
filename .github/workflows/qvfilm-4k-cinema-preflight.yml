@@ -1,0 +1,126 @@
+name: QVFIL 4K Cinema — coherent 5D3.123 crop + RAW + ultrafast preflight
+
+on:
+  push:
+    branches:
+      - qvfilm/4k-cinema-integration
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fourk-source-and-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout cohesive Arnaud/Danne 4K source tree
+        uses: actions/checkout@v4
+      - name: Install build dependencies (ARM cross compiler)
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            make gcc-arm-none-eabi binutils-arm-none-eabi \
+            libnewlib-dev libnewlib-arm-none-eabi \
+            gcc g++ gcc-multilib libc6-dev mercurial \
+            python3 python3-docutils perl
+      - name: Verify source exposes 5D3.123 native-width 4K and cached preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f platform/5D3.123/Makefile
+          grep -q 'FW_VERSION=123' platform/5D3.123/Makefile
+          grep -q 'CROP_PRESET_UHD' modules/crop_rec/crop_rec.c
+          grep -q 'CROP_PRESET_4K_HFPS' modules/crop_rec/crop_rec.c
+          grep -q '3840x1600' modules/crop_rec/crop_rec.c
+          grep -q 'raw_preview_fast_ex2' modules/mlv_lite/mlv_lite.c
+          grep -q 'FRAMED_PREVIEW_PARAM__ENGINE__ULTRAFAST' src/raw.c
+          grep -q 'raw_preview_fast_ex2' src/raw.c
+          grep -q 'cached ultrafast preview' src/raw.c
+          grep -q 'card_spanning' modules/mlv_lite/mlv_lite.c
+          echo 'PASS: crop sensor modes + MLV Lite + cached preview live in ONE source tree'
+      - name: Test bandwidth model and print all cinema/UHD budget assumptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s qvfilm/4k -p 'test_*.py' -v
+          python3 qvfilm/4k/feasibility.py --write-mb-s 100 --compression 1 --headroom .2 | tee qvfil-4k-bandwidth.txt
+          python3 qvfilm/4k/feasibility.py --write-mb-s 100 --compression 2 --headroom .2 >> qvfil-4k-bandwidth.txt
+      - name: Compile 5D3.123 core of FULL 4K tree
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C platform/5D3.123 PYTHON=python3 2>&1 | tee qvfil-4k-core-build.log
+      - name: Modernize Python 2-only module dependency checker in CI checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Build-only compatibility fix: makes legacy Danne checkdep.py run
+          # with Python3 on ubuntu-22.04; no camera code or register edits.
+          python3 -m lib2to3 -w -n modules/checkdep.py > /tmp/qvfil-2to3.log 2>&1
+          python3 -m py_compile modules/checkdep.py
+          echo "PASS: converted Python2 dependency report script ONLY in CI workspace"
+      - name: Compile MLV Lite first (exports core-to-crop shutter helpers)
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C modules/mlv_lite PYTHON=python3 2>&1 | tee qvfil-4k-mlv-build.log
+      - name: Compile crop_rec against MLV Lite exported functions
+        shell: bash
+        run: |
+          set -o pipefail
+          make -C modules/crop_rec PYTHON=python3 2>&1 | tee qvfil-4k-crop-build.log
+      - name: Fingerprint build products for engineering review ONLY
+        shell: bash
+        run: |
+          set -euo pipefail
+          find modules/crop_rec modules/mlv_lite -type f \( -name 'crop_rec.mo' -o -name 'mlv_lite.mo' \) -print | tee qvfil-4k-module-paths.txt
+          grep -q crop_rec.mo qvfil-4k-module-paths.txt
+          grep -q mlv_lite.mo qvfil-4k-module-paths.txt
+          while IFS= read -r f; do
+            test -s "$f"
+            arm-none-eabi-readelf -h "$f" | grep -E 'Machine:.*ARM'
+            sha256sum "$f"
+          done < qvfil-4k-module-paths.txt | tee qvfil-4k-checksums.txt
+          echo 'SOURCE/ABI BUILD ONLY. NOT APPROVED TO INSTALL IN CAMERA.' > qvfil-4k-NOT-CAMERA-READY.txt
+      - name: Create isolated 5D3.123 pilot review archive (NOT approved to install)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 qvfilm/4k/package_test_card.py --out dist/qvfil-4k-review | tee qvfil-4k-package-report.json
+          test -s dist/qvfil-4k-review.zip
+          test -s dist/qvfil-4k-review/CARD_ROOT/autoexec.bin
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/MLV_LITE.MO
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/CROP_REC.MO
+          test -s dist/qvfil-4k-review/CARD_ROOT/ML/MODULES/5D3_123.SYM
+          python3 - <<'PY'
+          import json, pathlib
+          p=json.loads(pathlib.Path("qvfil-4k-package-report.json").read_text())
+          assert p["hardware_tested"] is False
+          assert p["camera_installable_approval"] is False
+          print("Validated: same-source core+modules staged in explicit CARD_ROOT")
+          PY
+      - name: Upload review-only engineering package as separate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_4K_CINEMA_5D3_123_ENGINEERING_PILOT_UNTESTED
+          path: dist/qvfil-4k-review.zip
+          retention-days: 14
+          if-no-files-found: error
+      - name: Archive proof of build WITHOUT deploying camera firmware
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVFIL_4K_CINEMA_5D3_123_PREFLIGHT_LOGS_NOT_CAMERA_READY
+          path: |
+            qvfil-4k-bandwidth.txt
+            qvfil-4k-core-build.log
+            qvfil-4k-crop-build.log
+            qvfil-4k-mlv-build.log
+            qvfil-4k-module-paths.txt
+            qvfil-4k-checksums.txt
+            qvfil-4k-package-report.json
+            qvfil-4k-NOT-CAMERA-READY.txt
+          retention-days: 30
+          if-no-files-found: ignore
