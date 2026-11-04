@@ -48,12 +48,13 @@ def inspect_one(path):
                 name=kind.decode("ascii",errors="replace")
                 summary["unknown_types"][name]=summary["unknown_types"].get(name,0)+1
             if kind==b"MLVI":
-                if length<60:
+                if length<52:
                     summary["errors"].append(f"MLVI header too short ({length})")
                 else:
-                    f.seek(offset+16)
+                    f.seek(offset+8)
                     b=f.read(44)
-                    # MLVI v2: versionString[8], fileGuid[8], fileNum/count,
+                    # MLVI special 8-byte prefix (no timestamp), followed by
+                    # versionString[8], fileGuid[8], fileNum/count,
                     # flags[4], video/audioClass[2 each], frameCount [4 each],
                     # sourceFpsNom/Denom [4 each].
                     v,guid,file_num,file_count,flags,vc,ac,vf,af,nom,den=\
