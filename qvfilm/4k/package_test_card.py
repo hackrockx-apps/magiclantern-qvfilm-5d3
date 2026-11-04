@@ -48,6 +48,8 @@ SAFETY_ANCHORS = {
         'CHOICES("legacy", "ultrafast")',
     ],
     "src/raw.c": ["FRAMED_PREVIEW_PARAM__ENGINE__ULTRAFAST", "raw_preview_fast_ex2("],
+    "src/module.c": ['char *core_modules[] = {"mlv_play", "mlv_snd", "sd_uhs", "lua", "file_man", "dual_iso", "silent", "ettr", "focus_sq"};',
+                     "if(!config_flag_file_setting_load(enable_file) && index_in_core_modules >= core_modules_count)"],
 }
 
 WARNINGS = """QVFIL 4K CINEMA -- 5D3.123 -- EXPERIMENTAL REVIEW PACKAGE
@@ -72,7 +74,7 @@ Its fresh-card defaults: crop OFF, RAW OFF, card spanning OFF,
 More Hacks OFF, Small Hacks OFF, SRM memory OFF, CropRecPreview OFF,
 10-bit uncompressed. Enabling modules still initializes background
 tasks including the compression task. BOOT/RECORD IS UNTESTED.
-A correct ZIP/SHA256 is NOT a camera safety approval.
+Recorder/Crop are NOT core auto-load modules in this pilot, so a fresh\nclean card must require manual opt-in from Modules before they initialize.\nA correct ZIP/SHA256 is NOT a camera safety approval.
 Selecting 4K, enabling recording or altering preview is a separate
 explicit opt-in and requires STOP at first abnormal response.
 
