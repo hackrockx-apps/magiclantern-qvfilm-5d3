@@ -145,6 +145,9 @@ def stage(root: Path, out: Path, revision: str, *, allow_synthetic=False) -> dic
     }
     (out/"MANIFEST.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
     (out/"READ_ME_FIRST.txt").write_text(WARNINGS,encoding="utf-8")
+    handbook=root/"qvfilm/4k/USER_TEST_PROTOCOL_VI.md"
+    if handbook.is_file():
+        shutil.copyfile(handbook,out/"USER_TEST_PROTOCOL_VI.md")
     checksum_lines=[f'{h["sha256"]}  {name}' for name,h in manifest["files"].items()]
     (out/"SHA256SUMS.txt").write_text("\n".join(checksum_lines)+"\n",encoding="utf-8")
     # Zip includes CARD_ROOT and reports, NOT a deceptive ready-to-run root.
@@ -152,6 +155,8 @@ def stage(root: Path, out: Path, revision: str, *, allow_synthetic=False) -> dic
     if archive.exists():fail(f"Refusing to overwrite archive: {archive}")
     with zipfile.ZipFile(archive,"w",compression=zipfile.ZIP_DEFLATED,
                          compresslevel=6,allowZip64=True) as z:
+        for dirname in ("CARD_ROOT/ML/SETTINGS/", "CARD_ROOT/ML/LOGS/"):
+            z.writestr(dirname,b"")
         for f in sorted(p for p in out.rglob("*") if p.is_file()):
             z.write(f,f.relative_to(out))
     with zipfile.ZipFile(archive) as z:
