@@ -52,6 +52,15 @@ jobs:
         run: |
           set -o pipefail
           make -C platform/5D3.123 PYTHON=python3 2>&1 | tee qvfil-4k-core-build.log
+      - name: Modernize Python 2-only module dependency checker in CI checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Build-only compatibility fix: makes legacy Danne checkdep.py run
+          # with Python3 on ubuntu-22.04; no camera code or register edits.
+          python3 -m lib2to3 -w -n modules/checkdep.py > /tmp/qvfil-2to3.log 2>&1
+          python3 -m py_compile modules/checkdep.py
+          echo "PASS: converted Python2 dependency report script ONLY in CI workspace"
       - name: Compile 4K crop_rec module of SAME tree
         shell: bash
         run: |
