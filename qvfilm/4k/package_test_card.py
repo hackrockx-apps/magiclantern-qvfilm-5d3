@@ -40,6 +40,10 @@ SAFETY_ANCHORS = {
         'CONFIG_INT("raw.video.enabled", raw_video_enabled, 0);',
         'CONFIG_INT("raw.output_format", output_format, 2);',
         'CONFIG_INT("raw.more.hacks", more_hacks, 0);',
+        'CONFIG_INT("raw.CropRecPreview", prevmode, 0);',
+        'CONFIG_INT("raw.use.srm.memory", use_srm_memory, 0);',
+        'CONFIG_INT("raw.small.hacks", small_hacks, 0);',
+        'CONFIG_INT("raw.card_spanning", card_spanning, 0);',
         'raw_preview_fast_ex2(',
         'CHOICES("legacy", "ultrafast")',
     ],
@@ -64,8 +68,11 @@ ML 2025 or QVFIL 0.6.x binary modules, CFG files or outdated firmware.
 This is the Danne/Arnaud-derived 4K code base, WITHOUT the prior QVFIL HUD.
 Its source label 'UHD 1:1' documents 3840x1600@24, NOT 3840x2160.
 Its crop preview is documented as 'broken'; Ultrafast may or may not help.
-Its safe fresh-card source defaults are crop OFF, RAW video OFF,
-format 10-bit uncompressed, More Hacks OFF.
+Its fresh-card defaults: crop OFF, RAW OFF, card spanning OFF,
+More Hacks OFF, Small Hacks OFF, SRM memory OFF, CropRecPreview OFF,
+10-bit uncompressed. Enabling modules still initializes background
+tasks including the compression task. BOOT/RECORD IS UNTESTED.
+A correct ZIP/SHA256 is NOT a camera safety approval.
 Selecting 4K, enabling recording or altering preview is a separate
 explicit opt-in and requires STOP at first abnormal response.
 
